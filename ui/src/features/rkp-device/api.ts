@@ -18,6 +18,7 @@ const deviceStatusSchema = z
     library_path: z.string(),
     device_path: z.string(),
     fingerprint: z.string(),
+    device_manufacturer: z.string(),
     soc_manufacturer: z.string(),
     soc_detection: z.object({
       state: z.enum(["qualcomm", "media_tek", "other", "unknown", "conflicting"]),
@@ -72,6 +73,24 @@ const artifactPathsSchema = z.object({
 })
 export type ArtifactPaths = z.infer<typeof artifactPathsSchema>
 
+const manufacturerSchema = z
+  .object({
+    status: z.enum(["not_requested", "matched", "not_returned"]),
+    requested: z.string().nullable(),
+    certificate: z.string().nullable(),
+  })
+  .refine(
+    (data) => {
+      if (data.status === "not_requested")
+        return data.requested === null && data.certificate === null
+      if (!data.requested?.trim()) return false
+      return data.status === "not_returned"
+        ? data.certificate === null
+        : data.certificate === data.requested
+    },
+    { message: "Certificate manufacturer status disagrees with the request and server metadata" },
+  )
+
 const provisionSchema = z
   .object({
     acknowledged_limitations: z.boolean(),
@@ -95,6 +114,7 @@ const provisionSchema = z
     chain: chainSummarySchema,
     device_id: z.string(),
     keybox_xml: z.string(),
+    manufacturer: manufacturerSchema,
     artifacts: artifactPathsSchema,
     prerequisites: deviceStatusSchema,
   })
@@ -139,8 +159,12 @@ export const rkpDeviceApi = {
    * Sends the acknowledgement the backend requires. It is the flag a user has to give,
    * not a default, so the button that reaches this call is always an explicit one.
    */
-  provision: (protocol: Protocol = "auto") =>
-    duckd(["rkp-device", "provision", "--acknowledge-limitations", "--protocol", protocol], {
+  provision: (protocol: Protocol = "auto", manufacturer?: string) => {
+    const args = ["rkp-device", "provision", "--acknowledge-limitations", "--protocol", protocol]
+    const value = manufacturer?.trim()
+    if (value) args.push("--manufacturer", value)
+    return duckd(args, {
       schema: provisionSchema,
-    }),
+    })
+  },
 }

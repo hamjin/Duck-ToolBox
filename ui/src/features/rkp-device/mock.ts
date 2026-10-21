@@ -21,6 +21,7 @@ function deviceStatus(): DeviceStatus {
     library_path: "/vendor/lib64/libkeymasterdeviceutils.so",
     device_path: "/dev/smcinvoke",
     fingerprint: "google/husky/husky:15/AP3A.241005.015/1234567:user/release-keys",
+    device_manufacturer: new URLSearchParams(location.search).get("manufacturer") ?? "Google",
     soc_manufacturer: "QTI",
     soc_detection: {
       state: "qualcomm",
@@ -104,7 +105,7 @@ function deviceStatus(): DeviceStatus {
 }
 
 const mock: MockModule = {
-  feature: { id: "rkp-device", contract: 6 },
+  feature: { id: "rkp-device", contract: 7 },
   handlers: {
     "rkp-device.status": deviceStatus,
     "rkp-device.provision": (_args, flags) => {
@@ -134,12 +135,24 @@ const mock: MockModule = {
           ? (["v2", "v1", "v1-native"] as const).filter((method) => available[method])
           : [protocol as Method]
       const failures = new URLSearchParams(location.search).get("rkp_fail")?.split(",") ?? []
+      const manufacturer = typeof flags.manufacturer === "string" ? flags.manufacturer.trim() : ""
+      const metadataFailure = new URLSearchParams(location.search).get("rkp_manufacturer")
+      const metadataCodes: Record<string, string> = {
+        mismatch: "certificate_manufacturer_mismatch",
+        malformed: "invalid_provisioning_info",
+      }
+      const metadataCode = metadataCodes[metadataFailure ?? ""]
       const attempts: Provision["attempts"] = []
       let selected: Method | undefined
       for (const method of methods) {
         const error = failures.includes(method)
           ? { code: "ta_rejected", message: `${method} rejected the request` }
-          : null
+          : manufacturer && metadataCode
+            ? {
+                code: metadataCode,
+                message: "The issued certificate did not satisfy the requested manufacturer.",
+              }
+            : null
         attempts.push({ method, error })
         if (error === null) {
           selected = method
@@ -165,6 +178,15 @@ const mock: MockModule = {
         csr_backend: selected === "v1" ? "aidl" : "native",
         attempts,
         fingerprint: status.fingerprint,
+        manufacturer: {
+          requested: manufacturer || null,
+          certificate: manufacturer && metadataFailure !== "missing" ? manufacturer : null,
+          status: !manufacturer
+            ? "not_requested"
+            : metadataFailure === "missing"
+              ? "not_returned"
+              : "matched",
+        },
         challenge_hex: "9f2c1d4b6a8e0f3c5b7d9a1e2f4c6b8d0a2e4f6c8b0d2e4f6a8c0e2f4b6d8a0c",
         csr_len: 1284,
         local_verify: v1

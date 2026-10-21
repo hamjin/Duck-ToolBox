@@ -50,6 +50,16 @@
     "v1_native_unavailable": "V1 Native requiere /dev/smcinvoke y libkeymasterdeviceutils.so."
   },
   "run": {
+    "requestedManufacturer": "manufacturer solicitado",
+    "certificateManufacturer": "manufacturer del certificado",
+    "manufacturerNotReturned": "El servidor no devolvió manufacturer",
+    "manufacturerNotReturnedHint": "Se envió manufacturer en la solicitud, pero el certificado emitido no lo incluye. Se exportó el certificado original firmado por el servidor.",
+    "manufacturerNone": "No enviar",
+    "manufacturerDevice": "{manufacturer} (dispositivo actual)",
+    "manufacturerCustom": "Personalizado",
+    "manufacturer": "RKP Provisioning manufacturer (opcional)",
+    "manufacturerPlaceholder": "Dejar vacío para omitir",
+    "manufacturerHint": "Envía manufacturer en las solicitudes de aprovisionamiento RKP. Déjelo vacío para usar la solicitud predeterminada.",
     "provision": "Emitir keybox RKP",
     "done": "Keybox RKP emitido",
     "blocked": "Resuelve antes los requisitos que faltan arriba.",
@@ -83,6 +93,8 @@
     "body": "Esto ejecuta RKP (V1 / V2) en la app de confianza KeyMint del dispositivo y envía el resultado a Google. Solo funciona en algunos dispositivos y solo emite certificados RKP. Los archivos exportados contienen una clave privada; guárdalos de forma segura. ¿Continuar?"
   },
   "errors": {
+    "certificate_manufacturer_mismatch": "El manufacturer del certificado no coincide con la solicitud; no se exportó ninguna keybox.",
+    "invalid_provisioning_info": "La información de aprovisionamiento RKP del certificado tiene un formato incorrecto; no se exportó ninguna keybox.",
     "acknowledgement_required": "No se aceptaron las limitaciones.",
     "unsupported_device": "Este dispositivo no cumple los requisitos.",
     "ta_timeout": "La app de confianza KeyMint no respondió a tiempo.",

@@ -21,6 +21,18 @@ describe.skipIf(!hasDuckd)("device RKP API against the real duckd", CONTRACT, ()
     expect(status.prerequisites_met).toBe(false)
     expect(status.blockers).toContain("android_arm64_required")
     expect(status.limitations).toEqual(["partial_device_support", "rkp_only"])
+    expect(status.device_manufacturer).toBe("Google")
+  })
+
+  it("falls back to the vendor product manufacturer", async () => {
+    host = installHost({
+      props: {
+        "ro.product.manufacturer": "  ",
+        "ro.product.vendor.manufacturer": " Xiaomi ",
+        "ro.soc.manufacturer": "QTI",
+      },
+    })
+    expect((await rkpDeviceApi.status()).device_manufacturer).toBe("Xiaomi")
   })
 
   it.each(["auto", "v1", "v2", "v1-native"] as const)(
@@ -28,7 +40,9 @@ describe.skipIf(!hasDuckd)("device RKP API against the real duckd", CONTRACT, ()
     async (protocol) => {
       host = installHost({ props: DEVICE_PROPS })
 
-      const error = await rkpDeviceApi.provision(protocol).catch((caught: unknown) => caught)
+      const error = await rkpDeviceApi
+        .provision(protocol, "Google")
+        .catch((caught: unknown) => caught)
 
       // The API always sends the flag, so on a host the failure is the device gate, not a
       // usage error; the important part is that the envelope still matches the contract.
