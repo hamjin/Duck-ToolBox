@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { setBridge } from "@/core/bridge"
 
@@ -21,13 +21,14 @@ function result(protocol: Protocol = "auto"): Provision {
 }
 
 function respond(data: Provision) {
+  const exec = vi.fn(async () => ({
+    errno: 0,
+    stdout: JSON.stringify({ ok: true, api: 1, command: "rkp-device.provision", data }),
+    stderr: "",
+  }))
   setBridge({
     available: true,
-    exec: async () => ({
-      errno: 0,
-      stdout: JSON.stringify({ ok: true, api: 1, command: "rkp-device.provision", data }),
-      stderr: "",
-    }),
+    exec,
     toast: () => undefined,
     hostModule: () => null,
     listPackages: async () => [],
@@ -35,7 +36,29 @@ function respond(data: Provision) {
     iconUrl: () => null,
     exit: () => undefined,
   })
+  return exec
 }
+
+describe("device RKP manufacturer option", () => {
+  it.each([undefined, "", " \t\n"])("omits an empty manufacturer %j", async (value) => {
+    const exec = respond(result())
+    await rkpDeviceApi.provision("auto", value)
+    expect(exec).toHaveBeenCalledWith(
+      "'/data/adb/modules/duck-toolbox/bin/duckctl.sh' 'rkp-device' 'provision' '--acknowledge-limitations' '--protocol' 'auto'",
+    )
+  })
+
+  it.each(["auto", "v1", "v2", "v1-native"] as const)(
+    "passes a trimmed manufacturer as one argument with %s",
+    async (protocol) => {
+      const exec = respond(result(protocol))
+      await rkpDeviceApi.provision(protocol, "  A&B /+=?#厂商  ")
+      expect(exec).toHaveBeenCalledWith(
+        expect.stringContaining(`'--protocol' '${protocol}' '--manufacturer' 'A&B /+=?#厂商'`),
+      )
+    },
+  )
+})
 
 describe("device RKP successful-response validation", () => {
   it("accepts MediaTek AIDL and rejects a claimed Qualcomm native capability", async () => {
@@ -48,6 +71,28 @@ describe("device RKP successful-response validation", () => {
     await expect(rkpDeviceApi.provision()).rejects.toMatchObject({ code: "contract_mismatch" })
   })
 
+  it("accepts an explicit not-returned manufacturer result", async () => {
+    const data = result("v1")
+    data.manufacturer = { status: "not_returned", requested: "Xiaomi", certificate: null }
+    respond(data)
+    await expect(rkpDeviceApi.provision("v1", "Xiaomi")).resolves.toMatchObject({
+      manufacturer: data.manufacturer,
+    })
+  })
+
+  it.each([
+    { status: "not_returned", requested: "Xiaomi", certificate: "Xiaomi" },
+    { status: "matched", requested: "Xiaomi", certificate: null },
+    { status: "matched", requested: "Xiaomi", certificate: "Other" },
+    { status: "not_requested", requested: "Xiaomi", certificate: null },
+  ] as const)("rejects inconsistent manufacturer reports %j", async (manufacturer) => {
+    const data = result("v1")
+    data.manufacturer = manufacturer
+    respond(data)
+    await expect(rkpDeviceApi.provision("v1", "Xiaomi")).rejects.toMatchObject({
+      code: "contract_mismatch",
+    })
+  })
   it.each(["auto", "v1", "v2", "v1-native"] as const)(
     "accepts the verification semantics of %s",
     async (protocol) => {

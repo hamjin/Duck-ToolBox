@@ -16,7 +16,9 @@ use x509_cert::{
     der::{Decode, Encode},
 };
 
-use crate::{error::DeviceRkpError, protocol::MAX_CERT_CHAIN_LEN};
+use crate::{
+    error::DeviceRkpError, protocol::MAX_CERT_CHAIN_LEN, provisioning_info::ManufacturerReport,
+};
 
 /// Upper bound on the certificates in one issued chain. The server returns four (leaf,
 /// Droid CA3, Droid CA2, Key Attestation CA1); the bound only stops a malformed response
@@ -76,6 +78,7 @@ pub(crate) struct Artifacts {
     pub device_id: String,
     pub chain: Vec<ParsedCertificate>,
     pub paths: ArtifactPaths,
+    pub manufacturer: ManufacturerReport,
 }
 
 #[cfg(test)]
@@ -96,6 +99,7 @@ pub(crate) fn write(paths: &AppPaths, inputs: Inputs<'_>) -> Result<Artifacts> {
         inputs.secret_key,
         inputs.cert_chain_der.to_vec(),
         inputs.manufacturer,
+        None,
     )?
     .write(paths, inputs.csr)
 }
@@ -107,18 +111,22 @@ pub(crate) struct Prepared {
     keybox_xml: String,
     private_key_pem: String,
     cert_chain_der: Vec<u8>,
+    manufacturer: ManufacturerReport,
 }
 
 pub(crate) fn prepare(
     secret_key: &P256SecretKey,
     cert_chain_der: Vec<u8>,
     manufacturer: &str,
+    requested_manufacturer: Option<&str>,
 ) -> Result<Prepared> {
     let chain = parse_der_cert_chain(&cert_chain_der)
         .map_err(|error| DeviceRkpError::InvalidCsr(format!("{error:#}")))?;
     ensure_chain_matches_key(&chain, secret_key)?;
     ensure_chain_is_linked(&chain)?;
     let chain = keybox_order(&chain)?;
+    let manufacturer_report =
+        crate::provisioning_info::check_manufacturer(&chain[0].der, requested_manufacturer)?;
 
     let device_id = device_id(manufacturer)?;
     let keybox_xml =
@@ -130,6 +138,7 @@ pub(crate) fn prepare(
         keybox_xml,
         private_key_pem,
         cert_chain_der,
+        manufacturer: manufacturer_report,
     })
 }
 
@@ -141,6 +150,7 @@ impl Prepared {
             keybox_xml,
             private_key_pem,
             cert_chain_der,
+            manufacturer,
         } = self;
         // TempDir reserves a private directory atomically and removes partial output on
         // failure. It is retained only once every artifact has been written successfully.
@@ -169,6 +179,7 @@ impl Prepared {
             device_id,
             chain,
             paths: artifact_paths,
+            manufacturer,
         })
     }
 }

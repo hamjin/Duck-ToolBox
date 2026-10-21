@@ -73,12 +73,25 @@ pub(crate) fn request(
 
 /// V1 encrypts the DICE chain and signing evidence for the server. These checks establish
 /// well-formedness only; no local signature-valid claim can be made from this response.
+#[cfg(test)]
 pub(crate) fn assemble(
     response: Response,
     challenge: &[u8],
     public_key: &Value,
 ) -> Result<Vec<u8>> {
+    assemble_with_metadata(response, challenge, public_key, None)
+}
+
+pub(crate) fn assemble_with_metadata(
+    response: Response,
+    challenge: &[u8],
+    public_key: &Value,
+    metadata: Option<&[u8]>,
+) -> Result<Vec<u8>> {
     protocol::validate_inputs(challenge, public_key)?;
+    if let Some(metadata) = metadata {
+        as_map(&duck_rkp::cbor::decode(metadata)?, "UnverifiedDeviceInfo")?;
+    }
     if response.mac.len() != 32 {
         bail!("V1 keysToSign MAC must contain 32 bytes");
     }
@@ -125,7 +138,7 @@ pub(crate) fn assemble(
     // its encoding, nor any opaque ProtectedData returned by the HAL.
     let mut csr = vec![0x84, 0x82]; // [ [verified DeviceInfo, unverified DeviceInfo], ... ]
     csr.extend_from_slice(&response.device_info);
-    csr.push(0xa0); // empty unverified DeviceInfo
+    csr.extend_from_slice(metadata.unwrap_or(&[0xa0]));
     csr.extend_from_slice(&encode(&bytes(challenge.to_vec()))?);
     csr.extend_from_slice(&response.protected_data);
     csr.extend_from_slice(&maced_keys);

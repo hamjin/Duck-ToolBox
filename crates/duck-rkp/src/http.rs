@@ -58,7 +58,17 @@ pub async fn fetch_eek(
     fingerprint: &str,
     server_url: &str,
 ) -> Result<EekResponse> {
-    let url = rpc_url(server_url, "fetchEekChain")?;
+    fetch_eek_with_manufacturer(client, fingerprint, server_url, None).await
+}
+
+/// Fetch EEK material with an optional provisioning manufacturer query parameter.
+pub async fn fetch_eek_with_manufacturer(
+    client: &Client,
+    fingerprint: &str,
+    server_url: &str,
+    manufacturer: Option<&str>,
+) -> Result<EekResponse> {
+    let url = provisioning_url(server_url, "fetchEekChain", manufacturer)?;
     let payload = encode(&Value::Map(vec![
         (
             Value::Text("fingerprint".into()),
@@ -91,7 +101,18 @@ pub async fn submit_csr(
     challenge: &[u8],
     server_url: &str,
 ) -> Result<Vec<Vec<u8>>> {
-    let mut url = rpc_url(server_url, "signCertificates")?;
+    submit_csr_with_manufacturer(client, csr_bytes, challenge, server_url, None).await
+}
+
+/// Submit a CSR with an optional provisioning manufacturer query parameter.
+pub async fn submit_csr_with_manufacturer(
+    client: &Client,
+    csr_bytes: &[u8],
+    challenge: &[u8],
+    server_url: &str,
+    manufacturer: Option<&str>,
+) -> Result<Vec<Vec<u8>>> {
+    let mut url = provisioning_url(server_url, "signCertificates", manufacturer)?;
     url.query_pairs_mut()
         .append_pair("challenge", &Base64Url::encode_string(challenge));
 
@@ -114,6 +135,21 @@ pub async fn submit_csr(
         .context(RkpError::SubmissionUnknown)?;
 
     parse_sign_certificates_response(&body).context(RkpError::SubmissionUnknown)
+}
+
+fn provisioning_url(
+    server_url: &str,
+    method: &str,
+    manufacturer: Option<&str>,
+) -> Result<reqwest::Url> {
+    let mut url = rpc_url(server_url, method)?;
+    if let Some(value) = manufacturer
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        url.query_pairs_mut().append_pair("manufacturer", value);
+    }
+    Ok(url)
 }
 
 fn map_http_error(status: StatusCode, _body: &[u8]) -> RkpError {

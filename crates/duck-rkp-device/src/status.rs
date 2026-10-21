@@ -1,7 +1,8 @@
+use std::collections::BTreeMap;
+
 use duck_core::Context;
 use duck_platform::{exec, props};
 use serde::Serialize;
-use std::collections::BTreeMap;
 
 use crate::{
     soc::{self, Detection, State},
@@ -35,6 +36,7 @@ pub(crate) struct DeviceStatus {
     pub library_path: &'static str,
     pub device_path: &'static str,
     pub fingerprint: String,
+    pub device_manufacturer: String,
     pub soc_manufacturer: String,
     pub soc_detection: Detection,
     pub limitations: [&'static str; 2],
@@ -105,6 +107,7 @@ fn detect_with_properties(ctx: &Context, properties: &BTreeMap<String, String>) 
         library_path: LIBRARY_PATH,
         device_path: DEVICE_PATH,
         fingerprint,
+        device_manufacturer: device_manufacturer(properties),
         soc_manufacturer,
         soc_detection,
         limitations: LIMITATIONS,
@@ -112,9 +115,41 @@ fn detect_with_properties(ctx: &Context, properties: &BTreeMap<String, String>) 
     }
 }
 
+fn device_manufacturer(properties: &BTreeMap<String, String>) -> String {
+    ["ro.product.manufacturer", "ro.product.vendor.manufacturer"]
+        .iter()
+        .filter_map(|name| properties.get(*name))
+        .map(|value| value.trim())
+        .find(|value| !value.is_empty())
+        .unwrap_or_default()
+        .to_owned()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn device_manufacturer_uses_product_properties_with_vendor_fallback() {
+        for (product, vendor, expected) in [
+            (Some(" Xiaomi "), Some("vendor"), "Xiaomi"),
+            (Some(" \t "), Some(" Google "), "Google"),
+            (None, Some("Google"), "Google"),
+            (Some(""), Some("  "), ""),
+            (None, None, ""),
+        ] {
+            let mut properties = BTreeMap::from([("ro.soc.manufacturer".into(), "QTI".into())]);
+            for (name, value) in [
+                ("ro.product.manufacturer", product),
+                ("ro.product.vendor.manufacturer", vendor),
+            ] {
+                if let Some(value) = value {
+                    properties.insert(name.into(), value.into());
+                }
+            }
+            assert_eq!(device_manufacturer(&properties), expected);
+        }
+    }
 
     #[test]
     fn every_limitation_has_a_stable_id() {

@@ -50,6 +50,16 @@
     "v1_native_unavailable": "V1 Native 需要 /dev/smcinvoke 與 libkeymasterdeviceutils.so。"
   },
   "run": {
+    "requestedManufacturer": "請求的 manufacturer",
+    "certificateManufacturer": "憑證中的 manufacturer",
+    "manufacturerNotReturned": "伺服器未傳回 manufacturer",
+    "manufacturerNotReturnedHint": "請求已包含 manufacturer，但伺服器簽發的憑證未提供此欄位。已保留並匯出伺服器原始簽署憑證。",
+    "manufacturerNone": "不傳送",
+    "manufacturerDevice": "{manufacturer}（目前裝置）",
+    "manufacturerCustom": "自訂",
+    "manufacturer": "RKP Provisioning manufacturer（選填）",
+    "manufacturerPlaceholder": "留空則不傳送",
+    "manufacturerHint": "在 RKP provisioning 請求中附帶 manufacturer。留空使用預設請求。",
     "provision": "簽發 RKP keybox",
     "done": "RKP keybox 已簽發",
     "blocked": "請先解決上面缺少的前置條件。",
@@ -83,6 +93,8 @@
     "body": "這會在本機 KeyMint 受信任應用程式上執行 RKP (V1 / V2)，並把結果提交給 Google。此功能僅在部分裝置上可用，且只能簽發 RKP 憑證。匯出的檔案包含私密金鑰，請妥善保管。是否繼續？"
   },
   "errors": {
+    "certificate_manufacturer_mismatch": "簽發憑證中的 manufacturer 與要求值不符，未匯出 keybox。",
+    "invalid_provisioning_info": "簽發憑證中的 RKP provisioning 資訊格式錯誤，未匯出 keybox。",
     "acknowledgement_required": "尚未確認使用限制。",
     "unsupported_device": "本機不符合前置條件。",
     "ta_timeout": "KeyMint 受信任應用程式未及時回應。",

@@ -50,6 +50,16 @@
     "v1_native_unavailable": "Нативний V1 потребує /dev/smcinvoke і libkeymasterdeviceutils.so."
   },
   "run": {
+    "requestedManufacturer": "Запитаний виробник",
+    "certificateManufacturer": "Виробник у сертифікаті",
+    "manufacturerNotReturned": "Сервер не повернув manufacturer",
+    "manufacturerNotReturnedHint": "Параметр manufacturer було надіслано в запиті, але він відсутній у виданому сертифікаті. Експортовано оригінальний сертифікат із підписом сервера.",
+    "manufacturerNone": "Не надсилати",
+    "manufacturerDevice": "{manufacturer} (поточний пристрій)",
+    "manufacturerCustom": "Власне значення",
+    "manufacturer": "Виробник для RKP Provisioning (необов'язково)",
+    "manufacturerPlaceholder": "Залиште порожнім, щоб не надсилати",
+    "manufacturerHint": "Надсилає manufacturer у запитах RKP provisioning. Залиште поле порожнім, щоб використовувати стандартний запит.",
     "provision": "Видати keybox RKP",
     "done": "Keybox RKP видано",
     "blocked": "Перед видачею виконайте передумови, зазначені вище.",
@@ -83,6 +93,8 @@
     "body": "Це запускає RKP (V1 / V2) у довіреному застосунку KeyMint пристрою й надсилає результат Google. Працює лише на деяких пристроях і може видавати лише сертифікати RKP. Експортовані файли містять приватний ключ; зберігайте їх у таємниці. Продовжити?"
   },
   "errors": {
+    "certificate_manufacturer_mismatch": "Виробник у виданому сертифікаті не відповідає запиту; keybox не експортовано.",
+    "invalid_provisioning_info": "Виданий сертифікат містить некоректні відомості RKP provisioning; keybox не експортовано.",
     "acknowledgement_required": "Ознайомлення з обмеженнями не підтверджено.",
     "unsupported_device": "Цей пристрій не відповідає передумовам.",
     "ta_timeout": "Довірений застосунок KeyMint не відповів вчасно.",

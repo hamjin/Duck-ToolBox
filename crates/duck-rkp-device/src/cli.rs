@@ -9,7 +9,7 @@ pub static FEATURE: ClapFeature<Command> = ClapFeature::new(
     FeatureInfo {
         id: "rkp-device",
         summary: "Device-backed RKP issuance on compatible Qualcomm or MediaTek firmware",
-        contract: 6,
+        contract: 7,
     },
     dispatch,
 );
@@ -32,6 +32,10 @@ pub enum Command {
         /// RKP server base URL (for example a local proxy during development).
         #[arg(long)]
         server_url: Option<String>,
+        /// Optional manufacturer sent with provisioning requests and CSR metadata.
+        /// Missing certificate manufacturer is reported without blocking export.
+        #[arg(long)]
+        manufacturer: Option<String>,
         /// Also write `keybox.xml` here. The run directory keeps the private key and the CSR.
         #[arg(long)]
         output: Option<String>,
@@ -56,6 +60,7 @@ fn dispatch<'a>(command: Command, ctx: &'a Context) -> BoxFuture<'a, CommandResu
                 acknowledge_limitations,
                 fingerprint,
                 server_url,
+                manufacturer,
                 output,
             } => {
                 let options = service::Options {
@@ -63,7 +68,7 @@ fn dispatch<'a>(command: Command, ctx: &'a Context) -> BoxFuture<'a, CommandResu
                     fingerprint,
                     output: output.map(|path| ctx.paths.resolve_in_root(&path)),
                 };
-                let server = service::Google::new(server_url);
+                let server = service::Google::new(server_url, manufacturer);
                 match server {
                     Ok(server) => service::provision(
                         ctx,
