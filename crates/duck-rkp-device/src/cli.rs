@@ -45,6 +45,8 @@ pub enum Command {
     TaCsr {
         #[arg(long)]
         exchange: PathBuf,
+        #[arg(long, value_enum, default_value = "raw")]
+        buffer: crate::native_compat::BufferMode,
     },
 }
 
@@ -90,8 +92,8 @@ fn dispatch<'a>(command: Command, ctx: &'a Context) -> BoxFuture<'a, CommandResu
                     }
                 }
             }
-            Command::TaCsr { exchange } => {
-                worker::execute(&exchange).into_command("rkp-device.ta-csr", code_of)
+            Command::TaCsr { exchange, buffer } => {
+                worker::execute(&exchange, buffer).into_command("rkp-device.ta-csr", code_of)
             }
         }
     })

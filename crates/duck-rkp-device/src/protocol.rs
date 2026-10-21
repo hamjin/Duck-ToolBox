@@ -90,6 +90,21 @@ pub(crate) fn validate_inputs(challenge: &[u8], public_key: &Value) -> Result<()
 }
 
 #[cfg(any(test, all(target_os = "android", target_arch = "aarch64")))]
+pub(crate) fn command_response_payload(command: u32, response: &[u8]) -> Result<Vec<u8>> {
+    response_payload(response).map_err(|error| {
+        if command == CSR_COMMAND
+            && matches!(error.downcast_ref::<DeviceRkpError>(), Some(DeviceRkpError::Rejected(-40)))
+        {
+            DeviceRkpError::UnsupportedProtocol(
+                "native CSR_V2 (0x3122) was rejected with INVALID_TAG (-40); this firmware may not implement the private V2 CSR interface".into(),
+            ).into()
+        } else {
+            error
+        }
+    })
+}
+
+#[cfg(any(test, all(target_os = "android", target_arch = "aarch64")))]
 pub(crate) fn response_payload(response: &[u8]) -> Result<Vec<u8>> {
     if response.len() < 8 {
         return Err(DeviceRkpError::InvalidResponse("truncated header".into()).into());

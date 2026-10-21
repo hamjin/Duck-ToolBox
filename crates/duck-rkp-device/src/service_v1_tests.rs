@@ -206,7 +206,7 @@ async fn invalid_legacy_evidence_is_never_submitted_and_writes_no_artifacts() {
     .unwrap_err();
     assert_eq!(crate::error::code_of(&failure), "all_methods_failed");
     assert!(failure.to_string().contains("v1 [invalid_device_csr]"));
-    assert_eq!(*ta.calls.borrow(), ["v2", "v1", "v1-native"]);
+    assert_eq!(*ta.calls.borrow(), ["v2", "v1", "v1-native", "v1-native"]);
     assert!(server.submitted.lock().unwrap().is_empty());
     assert_eq!(fs::read_dir(&ctx.paths.outputs_dir).unwrap().count(), 0);
 }

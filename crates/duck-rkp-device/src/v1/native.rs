@@ -4,7 +4,7 @@
 use anyhow::{Context, Result, bail};
 use ciborium::value::Value;
 use duck_rkp::{
-    cbor::{as_array, as_bytes, as_map, encode, int, map_get},
+    cbor::{as_array, as_bytes, as_map, int, map_get},
     cose::key_mac_tag,
 };
 
@@ -15,6 +15,7 @@ pub(crate) const COMMAND: u32 = 0x311e;
 
 pub(crate) struct Request {
     pub bytes: Vec<u8>,
+    pub canonical_bytes: Vec<u8>,
     pub mac_tag: [u8; 32],
 }
 
@@ -32,17 +33,31 @@ fn build_request(
 ) -> Result<Request> {
     protocol::validate_inputs(challenge, public_key)?;
     let mac_tag = key_mac_tag(mac_key, std::slice::from_ref(public_key))?;
-    let payload = encode(&Value::Map(vec![
-        (int(4), Value::Bytes(challenge.to_vec())),
+    // Match KeymasterSerialize::serializeGenerateCsr's wire order. Some Qualcomm
+    // firmware consumes testMode before challenge and rejects the canonically
+    // sorted map (4 before 55) with -20, even though both maps are valid CBOR.
+    // This exception is only for the private TA envelope, not COSE MAC/signature data.
+    let fields = Value::Map(vec![
         (int(55), int(0)),
+        (int(4), Value::Bytes(challenge.to_vec())),
         (int(56), Value::Bytes(mac_key.to_vec())),
         (int(57), Value::Bytes(mac_tag.to_vec())),
         (int(58), Value::Bytes(eek.to_vec())),
-    ]))?;
+    ]);
+    let mut payload = Vec::new();
+    ciborium::ser::into_writer(&fields, &mut payload).context("encode native V1 vendor request")?;
     validate_request(&payload)?;
     let mut bytes = COMMAND.to_le_bytes().to_vec();
     bytes.extend_from_slice(&payload);
-    Ok(Request { bytes, mac_tag })
+    let canonical_payload = duck_rkp::cbor::encode(&fields)?;
+    validate_request(&canonical_payload)?;
+    let mut canonical_bytes = COMMAND.to_le_bytes().to_vec();
+    canonical_bytes.extend_from_slice(&canonical_payload);
+    Ok(Request {
+        bytes,
+        canonical_bytes,
+        mac_tag,
+    })
 }
 
 /// The worker accepts one bounded production-mode request, never arbitrary TA commands.
