@@ -50,6 +50,16 @@
     "v1_native_unavailable": "يتطلب V1 Native وجود /dev/smcinvoke وlibkeymasterdeviceutils.so."
   },
   "run": {
+    "requestedManufacturer": "manufacturer المطلوب",
+    "certificateManufacturer": "manufacturer في الشهادة",
+    "manufacturerNotReturned": "لم يُرجع الخادم manufacturer",
+    "manufacturerNotReturnedHint": "تم إرسال manufacturer مع الطلب، لكن الشهادة الصادرة لا تتضمنه. تم تصدير الشهادة الأصلية الموقعة من الخادم.",
+    "manufacturerNone": "عدم الإرسال",
+    "manufacturerDevice": "{manufacturer} (الجهاز الحالي)",
+    "manufacturerCustom": "مخصص",
+    "manufacturer": "RKP Provisioning manufacturer (اختياري)",
+    "manufacturerPlaceholder": "اتركه فارغًا لعدم الإرسال",
+    "manufacturerHint": "يرسل manufacturer مع طلبات توفير RKP. اتركه فارغًا لاستخدام الطلب الافتراضي.",
     "provision": "إصدار keybox بتقنية RKP",
     "done": "تم إصدار keybox بتقنية RKP",
     "blocked": "عالج المتطلبات الناقصة أعلاه أولًا.",
@@ -83,6 +93,8 @@
     "body": "سيُنفَّذ RKP (V1 / V2) في تطبيق KeyMint الموثوق من Qualcomm على الجهاز، ثم تُرسل النتيجة إلى Google. لا يعمل إلا على بعض الأجهزة ولا يصدر سوى شهادات RKP. تحتوي الملفات المصدّرة على مفتاح خاص؛ احتفظ بها بأمان. هل تريد المتابعة؟"
   },
   "errors": {
+    "certificate_manufacturer_mismatch": "قيمة manufacturer في الشهادة لا تطابق الطلب؛ لم يتم تصدير keybox.",
+    "invalid_provisioning_info": "معلومات توفير RKP في الشهادة غير صالحة؛ لم يتم تصدير keybox.",
     "acknowledgement_required": "لم يتم الإقرار بالقيود.",
     "unsupported_device": "هذا الجهاز لا يستوفي المتطلبات.",
     "ta_timeout": "لم يستجب تطبيق KeyMint الموثوق في الوقت المحدد.",

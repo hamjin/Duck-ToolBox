@@ -131,16 +131,22 @@ pub(crate) fn issue(
     exchange: &dyn Exchange,
     key: &EcKeyPair,
     eek: &EekResponse,
+    metadata: Option<&[u8]>,
 ) -> Result<SignedCsr> {
     match method {
-        Method::V1 => return issue_v1(exchange, key, eek),
-        Method::V1Native => return issue_native_v1(exchange, key, eek),
+        Method::V1 => return issue_v1(exchange, key, eek, metadata),
+        Method::V1Native => return issue_native_v1(exchange, key, eek, metadata),
         Method::V2 => {}
     }
     let request = protocol::build_request(&eek.challenge, &key.cose_public)?;
     let signed = exchange.csr(&request)?;
     let bytes = protocol::unwrap_csr(&signed)?;
     let report = protocol::validate_csr(&bytes, &eek.challenge, &key.cose_public)?;
+    let bytes = match metadata {
+        Some(metadata) => crate::csr_metadata::append_v2(&bytes, metadata)
+            .map_err(|error| DeviceRkpError::InvalidCsr(format!("{error:#}")))?,
+        None => bytes,
+    };
     Ok(SignedCsr {
         bytes,
         protocol: Protocol::V2,
@@ -149,16 +155,22 @@ pub(crate) fn issue(
     })
 }
 
-fn issue_v1(exchange: &dyn Exchange, key: &EcKeyPair, eek: &EekResponse) -> Result<SignedCsr> {
+fn issue_v1(
+    exchange: &dyn Exchange,
+    key: &EcKeyPair,
+    eek: &EekResponse,
+    metadata: Option<&[u8]>,
+) -> Result<SignedCsr> {
     let request = v1::request(&eek.challenge, &key.cose_public, &eek.eek_chains)?;
     let response = exchange.csr_v1(&request)?;
-    finish_v1(response, Backend::Aidl, key, eek)
+    finish_v1(response, Backend::Aidl, key, eek, metadata)
 }
 
 fn issue_native_v1(
     exchange: &dyn Exchange,
     key: &EcKeyPair,
     eek: &EekResponse,
+    metadata: Option<&[u8]>,
 ) -> Result<SignedCsr> {
     let chain = eek
         .eek_chains
@@ -172,7 +184,7 @@ fn issue_native_v1(
     let payload = exchange.csr(&request.bytes)?;
     let response = v1::native::response(&payload, &request.mac_tag)
         .map_err(|error| DeviceRkpError::InvalidResponse(format!("native V1: {error:#}")))?;
-    finish_v1(response, Backend::Native, key, eek)
+    finish_v1(response, Backend::Native, key, eek, metadata)
 }
 
 fn finish_v1(
@@ -180,8 +192,9 @@ fn finish_v1(
     backend: Backend,
     key: &EcKeyPair,
     eek: &EekResponse,
+    metadata: Option<&[u8]>,
 ) -> Result<SignedCsr> {
-    let bytes = v1::assemble(response, &eek.challenge, &key.cose_public)
+    let bytes = v1::assemble_with_metadata(response, &eek.challenge, &key.cose_public, metadata)
         .map_err(|error| DeviceRkpError::InvalidCsr(format!("V1: {error:#}")))?;
     Ok(SignedCsr {
         bytes,

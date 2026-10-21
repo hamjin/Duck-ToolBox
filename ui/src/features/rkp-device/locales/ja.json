@@ -50,6 +50,16 @@
     "v1_native_unavailable": "V1 Native には /dev/smcinvoke と libkeymasterdeviceutils.so が必要です。"
   },
   "run": {
+    "requestedManufacturer": "要求した manufacturer",
+    "certificateManufacturer": "証明書の manufacturer",
+    "manufacturerNotReturned": "サーバーが manufacturer を返しませんでした",
+    "manufacturerNotReturnedHint": "リクエストには manufacturer が含まれていますが、発行された証明書にはありません。サーバーが署名した元の証明書を出力しました。",
+    "manufacturerNone": "送信しない",
+    "manufacturerDevice": "{manufacturer} (現在のデバイス)",
+    "manufacturerCustom": "カスタム",
+    "manufacturer": "RKP Provisioning manufacturer（任意）",
+    "manufacturerPlaceholder": "空欄の場合は送信しません",
+    "manufacturerHint": "RKP provisioning リクエストに manufacturer を追加します。空欄の場合は既定のリクエストを使用します。",
     "provision": "RKP keybox を発行",
     "done": "RKP keybox を発行しました",
     "blocked": "先に上記の不足している前提条件を解決してください。",
@@ -83,6 +93,8 @@
     "body": "この端末の Qualcomm KeyMint トラステッドアプリで RKP (V1 / V2) を実行し、結果を Google に送信します。対応デバイスは一部だけで、発行できるのは RKP 証明書のみです。エクスポートしたファイルには秘密鍵が含まれるため、厳重に管理してください。続行しますか？"
   },
   "errors": {
+    "certificate_manufacturer_mismatch": "証明書の manufacturer が要求値と一致しません。keybox は出力されませんでした。",
+    "invalid_provisioning_info": "証明書の RKP provisioning 情報の形式が不正です。keybox は出力されませんでした。",
     "acknowledgement_required": "制限事項が確認されていません。",
     "unsupported_device": "このデバイスは前提条件を満たしていません。",
     "ta_timeout": "KeyMint トラステッドアプリが時間内に応答しませんでした。",

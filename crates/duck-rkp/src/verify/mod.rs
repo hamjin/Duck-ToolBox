@@ -8,7 +8,7 @@ use anyhow::{Result, anyhow};
 use serde::Serialize;
 
 use crate::{
-    cbor::{as_array, as_bytes, as_i128, as_text, decode},
+    cbor::{as_array, as_bytes, as_i128, as_map, as_text, decode},
     cose::build_sig_structure,
 };
 
@@ -84,7 +84,13 @@ pub fn verify_dice_chain(bytes: &[u8]) -> Result<DiceChainReport> {
 pub fn verify_csr(bytes: &[u8]) -> Result<VerifyReport> {
     let value = decode(bytes)?;
     let csr = as_array(&value, "CSR")?;
-    ensure_array_len(csr, 4, "CSR")?;
+    if csr.len() == 5 {
+        // The network CSR may append UnverifiedDeviceInfo to the HAL request.
+        // It is not authenticated and must not influence the verification report.
+        as_map(&csr[4], "UnverifiedDeviceInfo")?;
+    } else {
+        ensure_array_len(csr, 4, "CSR")?;
+    }
 
     let version = as_i128(&csr[0], "CSR version")?;
     if version != AUTHENTICATED_REQUEST_VERSION {

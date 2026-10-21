@@ -21,6 +21,12 @@ pub(crate) enum DeviceRkpError {
     InvalidCsr(String),
     #[error("the issued certificate does not match the generated P-256 key")]
     CertificateMismatch,
+    #[error(
+        "the issued certificate RKP Provisioning manufacturer does not match the requested manufacturer"
+    )]
+    CertificateManufacturerMismatch,
+    #[error("the issued certificate RKP provisioning information is malformed")]
+    InvalidProvisioningInfo,
     #[error("all available issuance methods failed: {0}")]
     AllMethodsFailed(String),
 }
@@ -37,6 +43,10 @@ pub(crate) fn code_of(error: &anyhow::Error) -> &'static str {
                 DeviceRkpError::InvalidResponse(_) => "invalid_ta_response",
                 DeviceRkpError::InvalidCsr(_) => "invalid_device_csr",
                 DeviceRkpError::CertificateMismatch => "certificate_key_mismatch",
+                DeviceRkpError::CertificateManufacturerMismatch => {
+                    "certificate_manufacturer_mismatch"
+                }
+                DeviceRkpError::InvalidProvisioningInfo => "invalid_provisioning_info",
                 DeviceRkpError::AllMethodsFailed(_) => "all_methods_failed",
             };
         }
