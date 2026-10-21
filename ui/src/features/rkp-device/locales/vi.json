@@ -93,6 +93,7 @@
     "body": "Thao tác này chạy RKP (V1 / V2) trên ứng dụng tin cậy KeyMint Qualcomm của thiết bị rồi gửi kết quả tới Google. Chỉ chạy trên một số thiết bị và chỉ phát chứng chỉ RKP. Các tệp xuất ra chứa khoá riêng; hãy bảo quản an toàn. Tiếp tục?"
   },
   "errors": {
+    "unsupported_protocol": "Firmware từ chối giao thức RKP hoặc giao diện gốc này; có thể chưa được triển khai. Hãy thử giao thức khác.",
     "certificate_manufacturer_mismatch": "manufacturer trong chứng chỉ không khớp với yêu cầu; keybox chưa được xuất.",
     "invalid_provisioning_info": "Thông tin cấp phát RKP trong chứng chỉ không đúng định dạng; keybox chưa được xuất.",
     "acknowledgement_required": "Chưa xác nhận các giới hạn.",

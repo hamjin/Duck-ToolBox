@@ -93,6 +93,7 @@
     "body": "這會在本機高通 KeyMint 受信任應用程式上執行 RKP (V1 / V2)，並把結果提交給 Google。此功能僅在部分裝置上可用，且只能簽發 RKP 憑證。匯出的檔案包含私密金鑰，請妥善保管。是否繼續？"
   },
   "errors": {
+    "unsupported_protocol": "韌體拒絕了此 RKP 協定或原生介面，可能尚未實作。請嘗試其他協定。",
     "certificate_manufacturer_mismatch": "簽發憑證中的 manufacturer 與要求值不符，未匯出 keybox。",
     "invalid_provisioning_info": "簽發憑證中的 RKP provisioning 資訊格式錯誤，未匯出 keybox。",
     "acknowledgement_required": "尚未確認使用限制。",

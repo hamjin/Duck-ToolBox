@@ -9,6 +9,8 @@ pub(crate) enum DeviceRkpError {
     AcknowledgementRequired,
     #[error("device prerequisites are not met: {0}")]
     UnsupportedDevice(String),
+    #[error("unsupported RKP protocol or native interface: {0}")]
+    UnsupportedProtocol(String),
     #[error("KeyMint worker exceeded its 30 second timeout")]
     Timeout,
     #[error("KeyMint transport failed: {0}")]
@@ -37,6 +39,7 @@ pub(crate) fn code_of(error: &anyhow::Error) -> &'static str {
             return match error {
                 DeviceRkpError::AcknowledgementRequired => "acknowledgement_required",
                 DeviceRkpError::UnsupportedDevice(_) => "unsupported_device",
+                DeviceRkpError::UnsupportedProtocol(_) => "unsupported_protocol",
                 DeviceRkpError::Timeout => "ta_timeout",
                 DeviceRkpError::Transport(_) => "ta_transport_error",
                 DeviceRkpError::Rejected(_) => "ta_rejected",

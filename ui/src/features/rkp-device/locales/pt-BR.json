@@ -93,6 +93,7 @@
     "body": "Isto executa RKP (V1 / V2) no app confiável KeyMint da Qualcomm do dispositivo e envia o resultado ao Google. Só funciona em alguns dispositivos e só emite certificados RKP. Os arquivos exportados contêm uma chave privada; mantenha-os seguros. Continuar?"
   },
   "errors": {
+    "unsupported_protocol": "O firmware rejeitou este protocolo RKP ou interface nativa; talvez não esteja implementado. Tente outro protocolo.",
     "certificate_manufacturer_mismatch": "O manufacturer do certificado não corresponde à solicitação; nenhuma keybox foi exportada.",
     "invalid_provisioning_info": "As informações de provisionamento RKP do certificado estão malformadas; nenhuma keybox foi exportada.",
     "acknowledgement_required": "As limitações não foram aceitas.",

@@ -78,6 +78,32 @@ fn ta_payload_rejects_a_truncated_header() {
 }
 
 #[test]
+fn native_v2_invalid_tag_has_a_protocol_diagnostic_without_hiding_other_rejections() {
+    for (command, status, code) in [
+        (CSR_COMMAND, -40_i32, "unsupported_protocol"),
+        (crate::v1::native::COMMAND, -40, "ta_rejected"),
+        (CSR_COMMAND, -20, "ta_rejected"),
+    ] {
+        let response = [status.to_le_bytes(), 0u32.to_le_bytes()].concat();
+        let error = super::command_response_payload(command, &response).unwrap_err();
+        assert_eq!(crate::error::code_of(&error), code);
+        assert!(error.to_string().contains(&status.to_string()));
+    }
+    for command in [CSR_COMMAND, crate::v1::native::COMMAND] {
+        let response = [
+            0u32.to_le_bytes().as_slice(),
+            1u32.to_le_bytes().as_slice(),
+            &[0xa0],
+        ]
+        .concat();
+        assert_eq!(
+            super::command_response_payload(command, &response).unwrap(),
+            [0xa0]
+        );
+    }
+}
+
+#[test]
 fn validate_request_rejects_a_wrong_map_shape() {
     let (_, key) = p256_public_key();
 
