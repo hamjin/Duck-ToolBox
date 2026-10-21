@@ -50,6 +50,12 @@
     "v1_native_unavailable": "V1 Native cần /dev/smcinvoke và libkeymasterdeviceutils.so."
   },
   "run": {
+    "manufacturerNone": "Không gửi",
+    "manufacturerDevice": "Device (thiết bị hiện tại)",
+    "manufacturerCustom": "Tùy chỉnh",
+    "manufacturer": "RKP Provisioning manufacturer (tùy chọn)",
+    "manufacturerPlaceholder": "Để trống để bỏ qua",
+    "manufacturerHint": "Gửi manufacturer trong yêu cầu cấp phát RKP. Để trống để dùng yêu cầu mặc định.",
     "provision": "Phát keybox RKP",
     "done": "Đã phát keybox RKP",
     "blocked": "Hãy xử lý các điều kiện còn thiếu ở trên trước.",
@@ -83,6 +89,9 @@
     "body": "Thao tác này chạy RKP (V1 / V2) trên ứng dụng tin cậy KeyMint Qualcomm của thiết bị rồi gửi kết quả tới Google. Chỉ chạy trên một số thiết bị và chỉ phát chứng chỉ RKP. Các tệp xuất ra chứa khoá riêng; hãy bảo quản an toàn. Tiếp tục?"
   },
   "errors": {
+    "certificate_manufacturer_missing": "Chứng chỉ được cấp thiếu manufacturer đã yêu cầu. Máy chủ phải thêm và ký trường này; keybox chưa được xuất.",
+    "certificate_manufacturer_mismatch": "manufacturer trong chứng chỉ không khớp với yêu cầu; keybox chưa được xuất.",
+    "invalid_provisioning_info": "Thông tin cấp phát RKP trong chứng chỉ không đúng định dạng; keybox chưa được xuất.",
     "acknowledgement_required": "Chưa xác nhận các giới hạn.",
     "unsupported_device": "Thiết bị này không đủ điều kiện.",
     "ta_timeout": "Ứng dụng tin cậy KeyMint không phản hồi kịp.",

@@ -96,6 +96,7 @@ pub(crate) fn write(paths: &AppPaths, inputs: Inputs<'_>) -> Result<Artifacts> {
         inputs.secret_key,
         inputs.cert_chain_der.to_vec(),
         inputs.manufacturer,
+        None,
     )?
     .write(paths, inputs.csr)
 }
@@ -113,12 +114,16 @@ pub(crate) fn prepare(
     secret_key: &P256SecretKey,
     cert_chain_der: Vec<u8>,
     manufacturer: &str,
+    requested_manufacturer: Option<&str>,
 ) -> Result<Prepared> {
     let chain = parse_der_cert_chain(&cert_chain_der)
         .map_err(|error| DeviceRkpError::InvalidCsr(format!("{error:#}")))?;
     ensure_chain_matches_key(&chain, secret_key)?;
     ensure_chain_is_linked(&chain)?;
     let chain = keybox_order(&chain)?;
+    if let Some(expected) = requested_manufacturer {
+        crate::provisioning_info::require_manufacturer(&chain[0].der, expected)?;
+    }
 
     let device_id = device_id(manufacturer)?;
     let keybox_xml =

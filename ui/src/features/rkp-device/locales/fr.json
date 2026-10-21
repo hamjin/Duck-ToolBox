@@ -50,6 +50,12 @@
     "v1_native_unavailable": "V1 Native nécessite /dev/smcinvoke et libkeymasterdeviceutils.so."
   },
   "run": {
+    "manufacturerNone": "Ne pas envoyer",
+    "manufacturerDevice": "Device (appareil actuel)",
+    "manufacturerCustom": "Personnalisé",
+    "manufacturer": "RKP Provisioning manufacturer (facultatif)",
+    "manufacturerPlaceholder": "Laisser vide pour omettre",
+    "manufacturerHint": "Ajoute manufacturer aux requêtes de provisionnement RKP. Laissez vide pour utiliser la requête par défaut.",
     "provision": "Émettre le keybox RKP",
     "done": "Keybox RKP émis",
     "blocked": "Résolvez d'abord les prérequis manquants ci-dessus.",
@@ -83,6 +89,9 @@
     "body": "Cela exécute RKP (V1 / V2) sur l'application de confiance KeyMint Qualcomm de l'appareil et envoie le résultat à Google. Cela ne fonctionne que sur certains appareils et n'émet que des certificats RKP. Les fichiers exportés contiennent une clé privée ; conservez-les en lieu sûr. Continuer ?"
   },
   "errors": {
+    "certificate_manufacturer_missing": "Le certificat émis ne contient pas le manufacturer demandé. Le serveur doit inclure et signer ce champ ; aucune keybox n’a été exportée.",
+    "certificate_manufacturer_mismatch": "Le manufacturer du certificat ne correspond pas à la demande ; aucune keybox n’a été exportée.",
+    "invalid_provisioning_info": "Les informations de provisionnement RKP du certificat sont malformées ; aucune keybox n’a été exportée.",
     "acknowledgement_required": "Les limitations n'ont pas été acceptées.",
     "unsupported_device": "Cet appareil ne remplit pas les prérequis.",
     "ta_timeout": "L'application de confiance KeyMint n'a pas répondu à temps.",
