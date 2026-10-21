@@ -41,6 +41,7 @@ impl Environment for FakeEnvironment {
             library_path: "/vendor/lib64/libkeymasterdeviceutils.so",
             device_path: "/dev/smcinvoke",
             fingerprint: FINGERPRINT.into(),
+            device_manufacturer: "Google".into(),
             soc_manufacturer: "QTI".into(),
             soc_detection: crate::soc::detect(
                 &[("ro.soc.manufacturer".into(), "QTI".into())].into(),
@@ -70,6 +71,7 @@ impl Environment for BlockedEnvironment {
             library_path: "/vendor/lib64/libkeymasterdeviceutils.so",
             device_path: "/dev/smcinvoke",
             fingerprint: FINGERPRINT.into(),
+            device_manufacturer: "Google".into(),
             soc_manufacturer: "Google".into(),
             soc_detection: crate::soc::detect(
                 &[("ro.soc.manufacturer".into(), "Google".into())].into(),
@@ -497,18 +499,32 @@ async fn provision_mirrors_the_keybox_to_an_explicit_output() {
 
 #[test]
 fn google_accepts_a_server_override() {
-    let server = super::Google::new(Some("https://example.invalid/v1".into())).unwrap();
+    let server = super::Google::new(Some("https://example.invalid/v1".into()), None).unwrap();
     assert!(format!("{server:?}").contains("example.invalid"));
 }
 
 #[test]
 fn google_validates_and_normalizes_the_server_endpoint() {
     for url in ["", "  ", "file:///tmp/rkp", "not a URL"] {
-        let error = super::Google::new(Some(url.into())).unwrap_err();
+        let error = super::Google::new(Some(url.into()), None).unwrap_err();
         assert_eq!(crate::error::code_of(&error), "invalid_server_url");
     }
-    let server = super::Google::new(Some(" https://example.invalid/v1/  ".into())).unwrap();
+    let server = super::Google::new(Some(" https://example.invalid/v1/  ".into()), None).unwrap();
     assert_eq!(server.server_url, "https://example.invalid/v1");
+}
+
+#[test]
+fn google_normalizes_the_optional_manufacturer() {
+    for (input, expected) in [
+        (None, None),
+        (Some(""), None),
+        (Some(" \t\n"), None),
+        (Some(" Google "), Some("Google")),
+        (Some("A&B /+=?#厂商"), Some("A&B /+=?#厂商")),
+    ] {
+        let server = super::Google::new(None, input.map(str::to_owned)).unwrap();
+        assert_eq!(server.manufacturer.as_deref(), expected);
+    }
 }
 
 #[test]

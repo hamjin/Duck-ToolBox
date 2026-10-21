@@ -50,6 +50,12 @@
     "v1_native_unavailable": "V1 Native에는 /dev/smcinvoke와 libkeymasterdeviceutils.so가 필요합니다."
   },
   "run": {
+    "manufacturerNone": "전송하지 않음",
+    "manufacturerDevice": "Device (현재 기기)",
+    "manufacturerCustom": "사용자 지정",
+    "manufacturer": "RKP Provisioning manufacturer (선택 사항)",
+    "manufacturerPlaceholder": "비워 두면 전송하지 않음",
+    "manufacturerHint": "RKP provisioning 요청에 manufacturer를 추가합니다. 비워 두면 기본 요청을 사용합니다.",
     "provision": "RKP keybox 발급",
     "done": "RKP keybox를 발급했습니다",
     "blocked": "먼저 위의 부족한 사전 조건을 해결하세요.",

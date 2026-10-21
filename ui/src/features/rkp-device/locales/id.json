@@ -50,6 +50,12 @@
     "v1_native_unavailable": "V1 Native memerlukan /dev/smcinvoke dan libkeymasterdeviceutils.so."
   },
   "run": {
+    "manufacturerNone": "Jangan kirim",
+    "manufacturerDevice": "Device (perangkat saat ini)",
+    "manufacturerCustom": "Kustom",
+    "manufacturer": "RKP Provisioning manufacturer (opsional)",
+    "manufacturerPlaceholder": "Kosongkan untuk melewati",
+    "manufacturerHint": "Mengirim manufacturer dalam permintaan provisioning RKP. Kosongkan untuk menggunakan permintaan bawaan.",
     "provision": "Terbitkan keybox RKP",
     "done": "Keybox RKP diterbitkan",
     "blocked": "Selesaikan dulu prasyarat yang kurang di atas.",

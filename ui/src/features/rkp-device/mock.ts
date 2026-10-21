@@ -20,6 +20,7 @@ function deviceStatus(): DeviceStatus {
     library_path: "/vendor/lib64/libkeymasterdeviceutils.so",
     device_path: "/dev/smcinvoke",
     fingerprint: "google/husky/husky:15/AP3A.241005.015/1234567:user/release-keys",
+    device_manufacturer: new URLSearchParams(location.search).get("manufacturer") ?? "Google",
     soc_manufacturer: "QTI",
     soc_detection: {
       state: "qualcomm",
@@ -79,7 +80,7 @@ function deviceStatus(): DeviceStatus {
 }
 
 const mock: MockModule = {
-  feature: { id: "rkp-device", contract: 5 },
+  feature: { id: "rkp-device", contract: 6 },
   handlers: {
     "rkp-device.status": deviceStatus,
     "rkp-device.provision": (_args, flags) => {

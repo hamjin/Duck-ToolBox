@@ -50,6 +50,12 @@
     "v1_native_unavailable": "V1 Native cần /dev/smcinvoke và libkeymasterdeviceutils.so."
   },
   "run": {
+    "manufacturerNone": "Không gửi",
+    "manufacturerDevice": "Device (thiết bị hiện tại)",
+    "manufacturerCustom": "Tùy chỉnh",
+    "manufacturer": "RKP Provisioning manufacturer (tùy chọn)",
+    "manufacturerPlaceholder": "Để trống để bỏ qua",
+    "manufacturerHint": "Gửi manufacturer trong yêu cầu cấp phát RKP. Để trống để dùng yêu cầu mặc định.",
     "provision": "Phát keybox RKP",
     "done": "Đã phát keybox RKP",
     "blocked": "Hãy xử lý các điều kiện còn thiếu ở trên trước.",

@@ -17,6 +17,7 @@ const deviceStatusSchema = z
     library_path: z.string(),
     device_path: z.string(),
     fingerprint: z.string(),
+    device_manufacturer: z.string(),
     soc_manufacturer: z.string(),
     soc_detection: z.object({
       state: z.enum(["qualcomm", "other", "unknown", "conflicting"]),
@@ -132,8 +133,12 @@ export const rkpDeviceApi = {
    * Sends the acknowledgement the backend requires. It is the flag a user has to give,
    * not a default, so the button that reaches this call is always an explicit one.
    */
-  provision: (protocol: Protocol = "auto") =>
-    duckd(["rkp-device", "provision", "--acknowledge-limitations", "--protocol", protocol], {
+  provision: (protocol: Protocol = "auto", manufacturer?: string) => {
+    const args = ["rkp-device", "provision", "--acknowledge-limitations", "--protocol", protocol]
+    const value = manufacturer?.trim()
+    if (value) args.push("--manufacturer", value)
+    return duckd(args, {
       schema: provisionSchema,
-    }),
+    })
+  },
 }

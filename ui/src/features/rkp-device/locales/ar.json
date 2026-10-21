@@ -50,6 +50,12 @@
     "v1_native_unavailable": "يتطلب V1 Native وجود /dev/smcinvoke وlibkeymasterdeviceutils.so."
   },
   "run": {
+    "manufacturerNone": "عدم الإرسال",
+    "manufacturerDevice": "Device (الجهاز الحالي)",
+    "manufacturerCustom": "مخصص",
+    "manufacturer": "RKP Provisioning manufacturer (اختياري)",
+    "manufacturerPlaceholder": "اتركه فارغًا لعدم الإرسال",
+    "manufacturerHint": "يرسل manufacturer مع طلبات توفير RKP. اتركه فارغًا لاستخدام الطلب الافتراضي.",
     "provision": "إصدار keybox بتقنية RKP",
     "done": "تم إصدار keybox بتقنية RKP",
     "blocked": "عالج المتطلبات الناقصة أعلاه أولًا.",

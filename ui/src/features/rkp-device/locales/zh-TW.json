@@ -50,6 +50,12 @@
     "v1_native_unavailable": "V1 Native 需要 /dev/smcinvoke 與 libkeymasterdeviceutils.so。"
   },
   "run": {
+    "manufacturerNone": "不傳送",
+    "manufacturerDevice": "Device（目前裝置）",
+    "manufacturerCustom": "自訂",
+    "manufacturer": "RKP Provisioning manufacturer（選填）",
+    "manufacturerPlaceholder": "留空則不傳送",
+    "manufacturerHint": "在 RKP provisioning 請求中附帶 manufacturer。留空使用預設請求。",
     "provision": "簽發 RKP keybox",
     "done": "RKP keybox 已簽發",
     "blocked": "請先解決上面缺少的前置條件。",

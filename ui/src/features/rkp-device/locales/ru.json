@@ -50,6 +50,12 @@
     "v1_native_unavailable": "Для V1 Native нужны /dev/smcinvoke и libkeymasterdeviceutils.so."
   },
   "run": {
+    "manufacturerNone": "Не отправлять",
+    "manufacturerDevice": "Device (текущее устройство)",
+    "manufacturerCustom": "Своё значение",
+    "manufacturer": "RKP Provisioning manufacturer (необязательно)",
+    "manufacturerPlaceholder": "Оставьте пустым, чтобы не отправлять",
+    "manufacturerHint": "Добавляет manufacturer в запросы RKP provisioning. Оставьте пустым для запроса по умолчанию.",
     "provision": "Выпустить RKP keybox",
     "done": "RKP keybox выпущен",
     "blocked": "Сначала устраните недостающие требования выше.",

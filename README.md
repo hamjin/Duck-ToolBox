@@ -239,8 +239,21 @@ Commands that take input read JSON from stdin with `--stdin-json`.
 hardware properties and the kernel's [SoC family/machine attributes](https://www.kernel.org/doc/rustdoc/latest/kernel/soc/struct.Attributes.html). It reports the raw
 evidence and distinguishes Qualcomm, another vendor, unknown and conflicting information.
 Unknown or conflicting information blocks issuance rather than guessing. These local
-checks do not establish firmware ABI compatibility or server acceptance. The status format
-uses feature contract 5; update the backend and WebUI together.
+checks do not establish firmware ABI compatibility or server acceptance. Device RKP Issuer
+uses feature contract 6; update the backend and WebUI together.
+
+Device RKP Issuer accepts an optional `manufacturer` in the WebUI or through
+`rkp-device provision --manufacturer <value> --acknowledge-limitations`.
+The WebUI offers **Do not send**, **Device (current device)** and **Custom**.
+Device uses `ro.product.manufacturer`, falling back to `ro.product.vendor.manufacturer`
+when empty, and displays the detected value. This option is disabled if neither
+property has a value. The initial selection is Do not send.
+It is sent as a URL-encoded query parameter to both `fetchEekChain` and
+`signCertificates`, including automatic protocol retries. Surrounding whitespace is
+trimmed; omitted, empty or whitespace-only values preserve the default requests.
+This option only adds request metadata; the device-signed CSR and the SoC-derived
+keybox device ID retain their existing values. Server support for this optional
+parameter depends on the provisioning endpoint.
 
 For offline identity checks, raw input must contain exactly 32 bytes unless `--offset`
 selects a 32-byte slice of a larger capture. Hex input must contain exactly 64 hexadecimal
