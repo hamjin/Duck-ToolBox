@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import { Cpu, FileKey2, RefreshCw, ShieldCheck, TriangleAlert } from "@lucide/vue"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -47,10 +48,22 @@ const status = useQuery({
 const result = ref<Provision | null>(null)
 const confirmOpen = ref(false)
 const protocol = ref<Protocol>("auto")
+const manufacturerMode = ref<"none" | "device" | "custom">("none")
+const manufacturer = ref("")
+const deviceManufacturer = computed(() => status.data.value?.device_manufacturer.trim() ?? "")
+watch(deviceManufacturer, (value) => {
+  if (!value && manufacturerMode.value === "device") manufacturerMode.value = "none"
+})
+const requestManufacturer = computed(() => {
+  if (manufacturerMode.value === "device") return deviceManufacturer.value
+  if (manufacturerMode.value === "custom") return manufacturer.value
+  return undefined
+})
 const canRun = computed(() => {
   const data = status.data.value
   return (
     data?.prerequisites_met &&
+    (manufacturerMode.value !== "device" || !!deviceManufacturer.value) &&
     (protocol.value === "auto" ||
       { v1: data.v1_available, v2: data.v2_available, "v1-native": data.v1_native_available }[
         protocol.value
@@ -64,7 +77,7 @@ const keyboxTargets = contributions("keyboxTargets")
 const compatibility = useKeyboxInstallConfirmation()
 
 const run = useMutation({
-  mutationFn: () => rkpDeviceApi.provision(protocol.value),
+  mutationFn: () => rkpDeviceApi.provision(protocol.value, requestManufacturer.value),
   onMutate: () => {
     result.value = null
   },
@@ -264,6 +277,42 @@ const resultRows = computed<Row[]>(() => {
               </SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <Label for="rkp-manufacturer-mode">{{ t("run.manufacturer") }}</Label>
+          <Select v-model="manufacturerMode" :disabled="run.isPending.value || confirmOpen">
+            <SelectTrigger
+              id="rkp-manufacturer-mode"
+              class="w-full"
+              aria-describedby="rkp-manufacturer-hint"
+              ><SelectValue
+            /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{{ t("run.manufacturerNone") }}</SelectItem>
+              <SelectItem v-if="deviceManufacturer" value="device">
+                {{ t("run.manufacturerDevice", { manufacturer: deviceManufacturer }) }}
+              </SelectItem>
+              <SelectItem value="custom">{{ t("run.manufacturerCustom") }}</SelectItem>
+            </SelectContent>
+          </Select>
+          <template v-if="manufacturerMode === 'custom'">
+            <Label for="rkp-manufacturer">{{ t("run.manufacturerCustom") }}</Label>
+            <Input
+              id="rkp-manufacturer"
+              v-model="manufacturer"
+              :disabled="run.isPending.value || confirmOpen"
+              :placeholder="t('run.manufacturerPlaceholder')"
+              aria-describedby="rkp-manufacturer-hint"
+              autocomplete="off"
+              autocapitalize="none"
+              :spellcheck="false"
+              dir="ltr"
+            />
+          </template>
+          <p id="rkp-manufacturer-hint" class="text-muted-foreground text-sm">
+            {{ t("run.manufacturerHint") }}
+          </p>
         </div>
 
         <Button

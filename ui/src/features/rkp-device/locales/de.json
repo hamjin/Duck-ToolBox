@@ -50,6 +50,12 @@
     "v1_native_unavailable": "V1 Native benötigt /dev/smcinvoke und libkeymasterdeviceutils.so."
   },
   "run": {
+    "manufacturerNone": "Nicht senden",
+    "manufacturerDevice": "{manufacturer} (aktuelles Gerät)",
+    "manufacturerCustom": "Benutzerdefiniert",
+    "manufacturer": "RKP Provisioning manufacturer (optional)",
+    "manufacturerPlaceholder": "Zum Weglassen leer lassen",
+    "manufacturerHint": "Sendet manufacturer mit RKP-Provisionierungsanfragen. Leer lassen, um die Standardanfrage zu verwenden.",
     "provision": "RKP-Keybox ausstellen",
     "done": "RKP-Keybox ausgestellt",
     "blocked": "Behebe zuerst die oben fehlenden Voraussetzungen.",
@@ -83,6 +89,9 @@
     "body": "Dies führt RKP (V1 / V2) auf der Qualcomm-KeyMint-Trusted-App des Geräts aus und sendet das Ergebnis an Google. Es funktioniert nur auf manchen Geräten und stellt nur RKP-Zertifikate aus. Die exportierten Dateien enthalten einen privaten Schlüssel; bewahre sie sicher auf. Fortfahren?"
   },
   "errors": {
+    "certificate_manufacturer_missing": "Im ausgestellten Zertifikat fehlt der angeforderte manufacturer. Der Server muss dieses Feld aufnehmen und signieren; es wurde keine Keybox exportiert.",
+    "certificate_manufacturer_mismatch": "Der manufacturer im Zertifikat stimmt nicht mit der Anfrage überein; es wurde keine Keybox exportiert.",
+    "invalid_provisioning_info": "Die RKP-Provisionierungsinformationen im Zertifikat sind fehlerhaft; es wurde keine Keybox exportiert.",
     "acknowledgement_required": "Die Einschränkungen wurden nicht bestätigt.",
     "unsupported_device": "Dieses Gerät erfüllt die Voraussetzungen nicht.",
     "ta_timeout": "Die KeyMint-Trusted-App hat nicht rechtzeitig geantwortet.",

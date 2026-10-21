@@ -14,7 +14,7 @@ use duck_platform::net::{http_client, is_web_url};
 use duck_rkp::{
     cose::{EcKeyPair, generate_ec_keypair},
     error::RkpError,
-    http::{EekResponse, fetch_eek, submit_csr},
+    http::{EekResponse, fetch_eek_with_manufacturer, submit_csr_with_manufacturer},
     profile::DEFAULT_SERVER_URL,
     verify::VerifyReport,
 };
@@ -73,6 +73,10 @@ impl Environment for DeviceEnvironment {
 /// The Google half: the anti-replay challenge and the issued certificate chain. The
 /// futures are boxed so the trait stays usable behind a reference.
 pub(crate) trait Server: Sync {
+    /// The normalized manufacturer actually sent with both provisioning requests.
+    fn requested_manufacturer(&self) -> Option<&str> {
+        None
+    }
     fn challenge<'a>(&'a self, fingerprint: &'a str) -> BoxFuture<'a, Result<EekResponse>>;
     fn certificates<'a>(
         &'a self,
@@ -104,10 +108,11 @@ impl Exchange for Device<'_> {
 pub(crate) struct Google {
     client: Client,
     server_url: String,
+    manufacturer: Option<String>,
 }
 
 impl Google {
-    pub(crate) fn new(server_url: Option<String>) -> Result<Self> {
+    pub(crate) fn new(server_url: Option<String>, manufacturer: Option<String>) -> Result<Self> {
         let server_url = server_url.unwrap_or_else(|| DEFAULT_SERVER_URL.to_owned());
         let server_url = server_url.trim().trim_end_matches('/').to_owned();
         if !is_web_url(&server_url) {
@@ -116,13 +121,28 @@ impl Google {
         Ok(Self {
             client: http_client()?,
             server_url,
+            manufacturer: manufacturer
+                .map(|value| value.trim().to_owned())
+                .filter(|value| !value.is_empty()),
         })
     }
 }
 
 impl Server for Google {
+    fn requested_manufacturer(&self) -> Option<&str> {
+        self.manufacturer.as_deref()
+    }
+
     fn challenge<'a>(&'a self, fingerprint: &'a str) -> BoxFuture<'a, Result<EekResponse>> {
-        Box::pin(async move { fetch_eek(&self.client, fingerprint, &self.server_url).await })
+        Box::pin(async move {
+            fetch_eek_with_manufacturer(
+                &self.client,
+                fingerprint,
+                &self.server_url,
+                self.manufacturer.as_deref(),
+            )
+            .await
+        })
     }
 
     fn certificates<'a>(
@@ -130,7 +150,16 @@ impl Server for Google {
         csr: &'a [u8],
         challenge: &'a [u8],
     ) -> BoxFuture<'a, Result<Vec<Vec<u8>>>> {
-        Box::pin(async move { submit_csr(&self.client, csr, challenge, &self.server_url).await })
+        Box::pin(async move {
+            submit_csr_with_manufacturer(
+                &self.client,
+                csr,
+                challenge,
+                &self.server_url,
+                self.manufacturer.as_deref(),
+            )
+            .await
+        })
     }
 }
 
@@ -278,10 +307,19 @@ async fn attempt(
         )
         .into());
     }
-    let signed = issuance::issue(method, exchange, key, &eek)?;
+    let metadata = server
+        .requested_manufacturer()
+        .map(|manufacturer| crate::csr_metadata::encode(fingerprint, manufacturer))
+        .transpose()?;
+    let signed = issuance::issue(method, exchange, key, &eek, metadata.as_deref())?;
     let chains = server.certificates(&signed.bytes, &eek.challenge).await?;
     let chain_der = single_chain(&chains)?;
-    let prepared = artifacts::prepare(&key.secret_key, chain_der, manufacturer)?;
+    let prepared = artifacts::prepare(
+        &key.secret_key,
+        chain_der,
+        manufacturer,
+        server.requested_manufacturer(),
+    )?;
     Ok(Issued {
         eek,
         signed,

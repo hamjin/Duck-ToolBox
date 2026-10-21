@@ -1,3 +1,5 @@
+import type { Page } from "@playwright/test"
+
 import { expect, test } from "./fixtures"
 
 test.beforeEach(async ({ page }) => {
@@ -5,6 +7,133 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem("duck-toolbox/acknowledged", JSON.stringify(["rkp-device"])),
   )
 })
+
+async function recordProvisionCommands(page: Page) {
+  await page.evaluate(() => {
+    const scope = window as unknown as Record<string, unknown>
+    const host = scope.ksu as { exec: (shell: string, options: string, callback: string) => void }
+    const original = host.exec
+    scope.provisionCommands = []
+    host.exec = (shell, options, callback) => {
+      if (shell.includes("'rkp-device' 'provision'"))
+        (scope.provisionCommands as string[]).push(shell)
+      original(shell, options, callback)
+    }
+  })
+}
+
+async function issue(page: Page) {
+  await page.getByRole("button", { name: "签发 RKP keybox", exact: true }).click()
+  await expect(page.locator("#rkp-manufacturer-mode")).toBeDisabled()
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "签发 RKP keybox", exact: true })
+    .click()
+  await expect(page.getByRole("heading", { name: "结果", exact: true })).toBeVisible()
+  await expect(page.locator("#rkp-manufacturer-mode")).toBeEnabled()
+}
+
+test("sends the optional manufacturer and omits it after clearing", async ({ page, open }) => {
+  await open("/rkp-device", { locale: "zh-CN" })
+  await recordProvisionCommands(page)
+  await page.getByRole("combobox", { name: "RKP Provisioning manufacturer（可选）" }).click()
+  await page.getByRole("option", { name: "自定义", exact: true }).click()
+  const manufacturer = page.getByRole("textbox", {
+    name: "自定义",
+    exact: true,
+  })
+  await expect(manufacturer).toHaveValue("")
+  for (const value of ["  Google  ", ""]) {
+    await manufacturer.fill(value)
+    await page.getByRole("button", { name: "签发 RKP keybox", exact: true }).click()
+    await expect(page.locator("#rkp-manufacturer")).toBeDisabled()
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "签发 RKP keybox", exact: true })
+      .click()
+    await expect(page.getByRole("heading", { name: "结果", exact: true })).toBeVisible()
+    await expect(manufacturer).toBeEnabled()
+  }
+  const commands = await page.evaluate(
+    () => (window as unknown as { provisionCommands: string[] }).provisionCommands,
+  )
+  expect(commands).toHaveLength(2)
+  expect(commands[0]).toContain("'--manufacturer' 'Google'")
+  expect(commands[1]).not.toContain("--manufacturer")
+  await page.screenshot({ path: "test-results/rkp-device-manufacturer-zh.png", fullPage: true })
+})
+
+test("renders the actual product manufacturer and can be switched off", async ({ page, open }) => {
+  await open("/rkp-device", { locale: "zh-CN", query: { manufacturer: " Xiaomi " } })
+  await recordProvisionCommands(page)
+  const manufacturer = page.getByRole("combobox", { name: "RKP Provisioning manufacturer（可选）" })
+  await expect(manufacturer).toHaveText("不发送")
+  await manufacturer.click()
+  await page.getByRole("option", { name: "Xiaomi（当前设备）", exact: true }).click()
+  await expect(manufacturer).toHaveText("Xiaomi（当前设备）")
+  await expect(page.getByRole("textbox", { name: "自定义", exact: true })).toHaveCount(0)
+  await issue(page)
+  await page.screenshot({
+    path: "test-results/rkp-device-manufacturer-device-zh.png",
+    fullPage: true,
+  })
+  await manufacturer.click()
+  await page.getByRole("option", { name: "不发送", exact: true }).click()
+  await issue(page)
+  const commands = await page.evaluate(
+    () => (window as unknown as { provisionCommands: string[] }).provisionCommands,
+  )
+  expect(commands).toHaveLength(2)
+  expect(commands[0]).toContain("'--manufacturer' 'Xiaomi'")
+  expect(commands[0]).not.toContain("'QTI'")
+  expect(commands[1]).not.toContain("--manufacturer")
+})
+
+test("hides the current-device option when the manufacturer is missing", async ({ page, open }) => {
+  for (const value of ["", "  "]) {
+    await open("/rkp-device", { locale: "zh-CN", query: { manufacturer: value } })
+    await page.getByRole("combobox", { name: "RKP Provisioning manufacturer（可选）" }).click()
+    await expect(page.getByRole("option")).toHaveText(["不发送", "自定义"])
+    await page.getByRole("option", { name: "自定义", exact: true }).click()
+    await expect(page.getByRole("textbox", { name: "自定义", exact: true })).toBeEnabled()
+    await expect(page.getByRole("button", { name: "签发 RKP keybox", exact: true })).toBeEnabled()
+  }
+})
+
+test("clears a selected device option if refresh loses the manufacturer", async ({
+  page,
+  open,
+}) => {
+  await open("/rkp-device", { locale: "zh-CN" })
+  const manufacturer = page.getByRole("combobox", { name: "RKP Provisioning manufacturer（可选）" })
+  await manufacturer.click()
+  await page.getByRole("option", { name: "Google（当前设备）", exact: true }).click()
+  await page.evaluate(() => history.replaceState(null, "", "?manufacturer=#/rkp-device"))
+  await page.getByRole("button", { name: "重新检查", exact: true }).click()
+  await expect(manufacturer).toHaveText("不发送")
+  await manufacturer.click()
+  await expect(page.getByRole("option")).toHaveText(["不发送", "自定义"])
+})
+
+for (const [failure, message] of [
+  ["missing", "签发证书缺少请求的 manufacturer。该字段必须由服务器写入并签名，未导出 keybox。"],
+  ["mismatch", "签发证书中的 manufacturer 与请求值不匹配，未导出 keybox。"],
+]) {
+  test(`rejects ${failure} manufacturer in the issued certificate`, async ({ page, open }) => {
+    await open("/rkp-device", { locale: "zh-CN", query: { rkp_manufacturer: failure! } })
+    await page.getByRole("combobox", { name: "协议", exact: true }).click()
+    await page.getByRole("option", { name: "CSR_V2", exact: true }).click()
+    await page.getByRole("combobox", { name: "RKP Provisioning manufacturer（可选）" }).click()
+    await page.getByRole("option", { name: "Google（当前设备）", exact: true }).click()
+    await page.getByRole("button", { name: "签发 RKP keybox", exact: true }).click()
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "签发 RKP keybox", exact: true })
+      .click()
+    await expect(page.getByText(message!, { exact: true })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "结果", exact: true })).toHaveCount(0)
+  })
+}
 
 test("explicit V1 issuance reports structural verification", async ({ page, open }) => {
   await open("/rkp-device", { locale: "zh-CN" })

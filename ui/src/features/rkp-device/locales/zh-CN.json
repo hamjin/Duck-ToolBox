@@ -50,6 +50,12 @@
     "v1_native_unavailable": "V1 Native 需要 /dev/smcinvoke 和 libkeymasterdeviceutils.so。"
   },
   "run": {
+    "manufacturerNone": "不发送",
+    "manufacturerDevice": "{manufacturer}（当前设备）",
+    "manufacturerCustom": "自定义",
+    "manufacturer": "RKP Provisioning manufacturer（可选）",
+    "manufacturerPlaceholder": "留空则不发送",
+    "manufacturerHint": "在 RKP provisioning 请求中附带 manufacturer。留空使用默认请求。",
     "provision": "签发 RKP keybox",
     "done": "RKP keybox 已签发",
     "blocked": "请先解决上面缺少的前置条件。",
@@ -83,6 +89,9 @@
     "body": "这会在本机高通 KeyMint 可信应用上执行 RKP (V1 / V2)，并把结果提交给 Google。该功能仅在部分设备上可用，且只能签发 RKP 证书。生成的文件包含私钥，请妥善保管。是否继续？"
   },
   "errors": {
+    "certificate_manufacturer_missing": "签发证书缺少请求的 manufacturer。该字段必须由服务器写入并签名，未导出 keybox。",
+    "certificate_manufacturer_mismatch": "签发证书中的 manufacturer 与请求值不匹配，未导出 keybox。",
+    "invalid_provisioning_info": "签发证书中的 RKP provisioning 信息格式错误，未导出 keybox。",
     "acknowledgement_required": "尚未确认使用限制。",
     "unsupported_device": "本机不满足前置条件。",
     "ta_timeout": "KeyMint 可信应用未及时响应。",

@@ -50,6 +50,12 @@
     "v1_native_unavailable": "Для V1 Native нужны /dev/smcinvoke и libkeymasterdeviceutils.so."
   },
   "run": {
+    "manufacturerNone": "Не отправлять",
+    "manufacturerDevice": "{manufacturer} (текущее устройство)",
+    "manufacturerCustom": "Своё значение",
+    "manufacturer": "RKP Provisioning manufacturer (необязательно)",
+    "manufacturerPlaceholder": "Оставьте пустым, чтобы не отправлять",
+    "manufacturerHint": "Добавляет manufacturer в запросы RKP provisioning. Оставьте пустым для запроса по умолчанию.",
     "provision": "Выпустить RKP keybox",
     "done": "RKP keybox выпущен",
     "blocked": "Сначала устраните недостающие требования выше.",
@@ -83,6 +89,9 @@
     "body": "Будет выполнен RKP (V1 / V2) в доверенном приложении Qualcomm KeyMint на устройстве, а результат отправлен в Google. Работает только на части устройств и выпускает только сертификаты RKP. Экспортированные файлы содержат закрытый ключ; храните их в безопасности. Продолжить?"
   },
   "errors": {
+    "certificate_manufacturer_missing": "В выданном сертификате нет запрошенного manufacturer. Сервер должен включить это поле в подписанный сертификат; keybox не экспортирован.",
+    "certificate_manufacturer_mismatch": "Значение manufacturer в сертификате не совпадает с запросом; keybox не экспортирован.",
+    "invalid_provisioning_info": "Информация RKP provisioning в сертификате имеет неверный формат; keybox не экспортирован.",
     "acknowledgement_required": "Ограничения не подтверждены.",
     "unsupported_device": "Устройство не соответствует требованиям.",
     "ta_timeout": "Доверенное приложение KeyMint не ответило вовремя.",

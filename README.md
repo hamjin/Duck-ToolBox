@@ -239,8 +239,38 @@ Commands that take input read JSON from stdin with `--stdin-json`.
 hardware properties and the kernel's [SoC family/machine attributes](https://www.kernel.org/doc/rustdoc/latest/kernel/soc/struct.Attributes.html). It reports the raw
 evidence and distinguishes Qualcomm, another vendor, unknown and conflicting information.
 Unknown or conflicting information blocks issuance rather than guessing. These local
-checks do not establish firmware ABI compatibility or server acceptance. The status format
-uses feature contract 5; update the backend and WebUI together.
+checks do not establish firmware ABI compatibility or server acceptance. Device RKP Issuer
+uses feature contract 6; update the backend and WebUI together.
+
+Device RKP Issuer accepts an optional `manufacturer` in the WebUI or through
+`rkp-device provision --manufacturer <value> --acknowledge-limitations`.
+The WebUI offers **Do not send**, the detected manufacturer (for example,
+**Google (current device)**), and **Custom**. The current-device option uses
+`ro.product.manufacturer`, falling back to `ro.product.vendor.manufacturer` when
+empty. The option is hidden if neither property has a value; a selected device
+option resets to Do not send if a refresh can no longer read the manufacturer.
+The initial selection is Do not send.
+It is sent as a URL-encoded query parameter to both `fetchEekChain` and
+`signCertificates`, including automatic protocol retries. Surrounding whitespace is
+trimmed; omitted, empty or whitespace-only values preserve the default requests.
+When set, the submitted CSR also includes `manufacturer` and the request fingerprint
+in `UnverifiedDeviceInfo`: the second DeviceInfo map for V1 AIDL/native, or the fifth
+outer array item for V2. The saved CSR is exactly the one submitted. The HAL's signed
+DeviceInfo, DICE chain, signatures and encrypted evidence are preserved byte for byte;
+the requested manufacturer is request metadata, not a replacement for authenticated
+hardware information.
+When set, export requires the certificate for the generated key to contain the
+same manufacturer in its RKP provisioning information extension
+(`1.3.6.1.4.1.11129.2.1.30`, CBOR integer key `3`), as read by
+[KeyAttestation's ProvisioningInfo parser](https://github.com/hamjin/KeyAttestation/blob/aecec8c94e19d81321c89b07d2083a14200d88cf/app/src/main/java/io/github/vvb2060/keyattestation/attestation/ProvisioningInfo.java).
+Missing, mismatched or malformed metadata fails that issuance attempt before any
+keybox or private-key file is written. Automatic mode retains the error and tries
+the next available protocol. An explicit output file is left untouched on failure.
+The certificate DER is preserved byte for byte in the keybox and certificate-chain
+file. The extension must be included by the server before signing; a request
+parameter alone does not guarantee server support. No certificate is rewritten or
+re-signed locally, and XML comments or DeviceID text do not satisfy this check.
+Without a requested manufacturer, the existing export behavior is preserved.
 
 For offline identity checks, raw input must contain exactly 32 bytes unless `--offset`
 selects a 32-byte slice of a larger capture. Hex input must contain exactly 64 hexadecimal

@@ -3,6 +3,7 @@
 
 mod artifacts;
 mod cli;
+mod csr_metadata;
 mod error;
 mod issuance;
 #[cfg(all(target_os = "android", target_arch = "aarch64"))]
@@ -10,6 +11,7 @@ mod issuance;
 mod keymint;
 mod process;
 mod protocol;
+mod provisioning_info;
 mod service;
 mod soc;
 mod status;
