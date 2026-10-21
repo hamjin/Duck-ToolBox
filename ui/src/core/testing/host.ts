@@ -24,9 +24,11 @@ import path from "node:path"
 import { setBridge } from "@/core/bridge"
 
 const repository = path.resolve(import.meta.dirname, "../../../..")
+const executableExtension = process.platform === "win32" ? ".exe" : ""
 
 /** `DUCKD_BIN`, or the host debug build (`cargo build -p duckd`). */
-export const duckdBinary = process.env.DUCKD_BIN ?? path.join(repository, "target/debug/duckd")
+export const duckdBinary =
+  process.env.DUCKD_BIN ?? path.join(repository, `target/debug/duckd${executableExtension}`)
 export const hasDuckd = existsSync(duckdBinary)
 /** Each call spawns the wrapper and a debug build, which also generates RSA keys. */
 export const CONTRACT = { timeout: 120_000 }
@@ -108,7 +110,8 @@ export function installHost(device: Device = {}): Host {
   }
   symlinkSync(duckdBinary, path.join(module, "bin/duckd"))
   const engine =
-    process.env.PIF_ENGINE_BIN ?? path.join(repository, "target/pif-engine/debug/pif-engine")
+    process.env.PIF_ENGINE_BIN ??
+    path.join(repository, `target/pif-engine/debug/pif-engine${executableExtension}`)
   if (existsSync(engine)) {
     mkdirSync(path.join(module, "play-integrity"), { recursive: true })
     symlinkSync(engine, path.join(module, "play-integrity/pif-engine"))

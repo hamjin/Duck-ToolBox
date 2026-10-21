@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::DeviceRkpError,
+    native_compat::BufferMode,
     process::{self, read_exchange_file},
     protocol::{self, BUFFER_SIZE, MAX_REQUEST_SIZE},
 };
@@ -50,7 +51,7 @@ impl Reply {
 
 /// Vendor calls cannot be interrupted safely inside the CLI process. A child owns
 /// the session, stdout is discarded, and the parent kills and reaps it on timeout.
-pub(crate) fn sign(paths: &AppPaths, request: &[u8]) -> Result<Vec<u8>> {
+pub(crate) fn sign(paths: &AppPaths, request: &[u8], buffer: BufferMode) -> Result<Vec<u8>> {
     // Anything around the child process is a local transport failure, not an internal
     // error: the WebUI has a message for `ta_transport_error` and none for the latter.
     let local = |error: anyhow::Error| -> anyhow::Error {
@@ -79,7 +80,8 @@ pub(crate) fn sign(paths: &AppPaths, request: &[u8]) -> Result<Vec<u8>> {
     command
         .env("LD_LIBRARY_PATH", VENDOR_LIBRARY_PATH)
         .args(["rkp-device", "ta-csr", "--exchange"])
-        .arg(exchange.path());
+        .arg(exchange.path())
+        .args(["--buffer", buffer.argument()]);
     let status = process::run(&mut command, TIMEOUT)?;
     let reply_path = exchange.path().join("reply.json");
     if !status.success() || !reply_path.is_file() {
@@ -95,11 +97,11 @@ pub(crate) fn sign(paths: &AppPaths, request: &[u8]) -> Result<Vec<u8>> {
         .into_result()
 }
 
-pub(crate) fn execute(exchange: &Path) -> Result<()> {
+pub(crate) fn execute(exchange: &Path, buffer: BufferMode) -> Result<()> {
     let result = (|| {
         let request = read_exchange_file(&exchange.join("request.bin"), MAX_REQUEST_SIZE)?;
         protocol::ta_payload(&request)?;
-        native_request(&request)
+        native_request(&request, buffer)
     })();
     let reply = Reply::from_result(result);
     let encoded = serde_json::to_vec(&reply).context("encode the worker reply")?;
@@ -109,14 +111,14 @@ pub(crate) fn execute(exchange: &Path) -> Result<()> {
     Ok(())
 }
 
-fn native_request(request: &[u8]) -> Result<Vec<u8>> {
+fn native_request(request: &[u8], buffer: BufferMode) -> Result<Vec<u8>> {
     #[cfg(all(target_os = "android", target_arch = "aarch64"))]
     {
-        crate::keymint::request(request)
+        crate::keymint::request(request, buffer)
     }
     #[cfg(not(all(target_os = "android", target_arch = "aarch64")))]
     {
-        let _ = request;
+        let _ = (request, buffer);
         Err(DeviceRkpError::UnsupportedDevice("Android arm64 required".into()).into())
     }
 }
@@ -149,6 +151,7 @@ mod tests {
             DeviceRkpError::Rejected(-10001),
             DeviceRkpError::InvalidResponse("invalid payload length".into()),
             DeviceRkpError::UnsupportedDevice("Android arm64 required".into()),
+            DeviceRkpError::UnsupportedProtocol("native CSR_V2 is unavailable".into()),
             DeviceRkpError::Transport("library cannot be loaded".into()),
         ] {
             let expected_message = error.to_string();
@@ -226,7 +229,7 @@ mod tests {
             ..paths
         };
 
-        let error = sign(&paths, &[0x22, 0x31, 0x00, 0x00]).unwrap_err();
+        let error = sign(&paths, &[0x22, 0x31, 0x00, 0x00], BufferMode::Raw).unwrap_err();
         assert_eq!(crate::error::code_of(&error), "ta_transport_error");
         assert!(error.to_string().contains("worker failed"));
     }
@@ -240,7 +243,7 @@ mod tests {
 
         // The real executable rejects this request before it ever writes a reply, which is
         // exactly the "worker exited without a reply" path.
-        let error = sign(&paths, &[0x22, 0x31, 0x00, 0x00]).unwrap_err();
+        let error = sign(&paths, &[0x22, 0x31, 0x00, 0x00], BufferMode::Raw).unwrap_err();
         assert_eq!(crate::error::code_of(&error), "ta_transport_error");
     }
 

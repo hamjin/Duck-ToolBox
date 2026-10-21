@@ -93,6 +93,7 @@
     "body": "这会在本机 KeyMint 可信应用上执行 RKP (V1 / V2)，并把结果提交给 Google。该功能仅在部分设备上可用，且只能签发 RKP 证书。生成的文件包含私钥，请妥善保管。是否继续？"
   },
   "errors": {
+    "unsupported_protocol": "固件拒绝了该 RKP 协议或原生接口，可能尚未实现。请尝试其他协议。",
     "certificate_manufacturer_mismatch": "签发证书中的 manufacturer 与请求值不匹配，未导出 keybox。",
     "invalid_provisioning_info": "签发证书中的 RKP provisioning 信息格式错误，未导出 keybox。",
     "acknowledgement_required": "尚未确认使用限制。",

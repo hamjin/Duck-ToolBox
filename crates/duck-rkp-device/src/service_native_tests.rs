@@ -135,7 +135,7 @@ async fn native_errors_never_submit_evidence_write_artifacts_or_call_another_ada
         .await
         .unwrap_err();
         assert_eq!(crate::error::code_of(&error), expected);
-        assert_eq!(*ta.calls.borrow(), 1);
+        assert_eq!(*ta.calls.borrow(), 2);
         assert!(server.submitted.lock().unwrap().is_empty());
         assert_eq!(fs::read_dir(&ctx.paths.outputs_dir).unwrap().count(), 0);
     }
@@ -175,4 +175,156 @@ async fn native_backup_requires_a_complete_chain_for_the_selected_server_curve()
         assert_eq!(*ta.calls.borrow(), 0);
         assert!(server.submitted.lock().unwrap().is_empty());
     }
+}
+
+struct CompatibilityTa {
+    success: Option<usize>,
+    calls: RefCell<Vec<(usize, Vec<u8>)>>,
+    valid: NativeTa,
+}
+
+impl Exchange for CompatibilityTa {
+    fn csr(&self, _: &[u8]) -> anyhow::Result<Vec<u8>> {
+        panic!("compatibility attempts must select a buffer mode explicitly")
+    }
+
+    fn csr_with_buffer(
+        &self,
+        request: &[u8],
+        buffer: crate::native_compat::BufferMode,
+    ) -> anyhow::Result<Vec<u8>> {
+        let value = duck_rkp::cbor::decode(protocol::ta_payload(request)?).unwrap();
+        let fields = as_map(&value, "request").unwrap();
+        let canonical = fields[0].0 == int(4);
+        let index = usize::from(canonical) * 2
+            + usize::from(buffer == crate::native_compat::BufferMode::Shared);
+        self.calls
+            .borrow_mut()
+            .push((index, encode(&value).unwrap()));
+        if self.success == Some(index) {
+            return self.valid.csr(request);
+        }
+        match index {
+            0 => Ok(vec![0xa0]), // Transport succeeded, but the reply is malformed.
+            1 => Err(DeviceRkpError::Transport("shared symbols missing".into()).into()),
+            2 => Err(DeviceRkpError::Rejected(-20).into()),
+            _ => Err(DeviceRkpError::Timeout.into()),
+        }
+    }
+}
+
+#[tokio::test]
+async fn native_compatibility_tries_both_orders_and_buffers_before_one_server_submission() {
+    for success in [Some(0), Some(1), Some(2), Some(3), None] {
+        let (_dir, ctx) = working_dir("rkp-native-compatible");
+        let server = seeded_server();
+        let ta = CompatibilityTa {
+            success,
+            calls: RefCell::new(vec![]),
+            valid: NativeTa {
+                calls: RefCell::new(0),
+                outcome: Outcome::Valid,
+            },
+        };
+        let result = provision(
+            &ctx,
+            true,
+            Options {
+                protocol: Protocol::V1Native,
+                ..Options::default()
+            },
+            &FixedKeys,
+            &ta,
+            &server,
+            &NativeEnvironment,
+        )
+        .await;
+        let calls = ta.calls.borrow();
+        let count = success.map_or(4, |index| index + 1);
+        assert_eq!(
+            calls.iter().map(|(index, _)| *index).collect::<Vec<_>>(),
+            (0..count).collect::<Vec<_>>()
+        );
+        assert!(
+            calls.iter().all(|(_, fields)| *fields == calls[0].1),
+            "all variants must retain the same challenge, MAC key/tag and EEK"
+        );
+        if success.is_some() {
+            let data = result.unwrap();
+            assert_eq!(data.csr_backend, Backend::Native);
+            assert_eq!(data.attempts.len(), 1);
+            assert_eq!(server.submitted.lock().unwrap().len(), 1);
+        } else {
+            let error = result.unwrap_err();
+            assert_eq!(crate::error::code_of(&error), "invalid_ta_response");
+            for label in [
+                "vendor-order/send_cmd",
+                "vendor-order/init/sendCmd",
+                "canonical-order/send_cmd",
+                "canonical-order/init/sendCmd",
+            ] {
+                assert!(format!("{error:#}").contains(label));
+            }
+            assert!(server.submitted.lock().unwrap().is_empty());
+            assert_eq!(fs::read_dir(&ctx.paths.outputs_dir).unwrap().count(), 0);
+        }
+    }
+}
+
+struct V2SharedTa {
+    calls: RefCell<Vec<crate::native_compat::BufferMode>>,
+    valid: FakeTa,
+}
+
+impl Exchange for V2SharedTa {
+    fn csr(&self, _: &[u8]) -> anyhow::Result<Vec<u8>> {
+        panic!("explicit buffer expected")
+    }
+    fn csr_with_buffer(
+        &self,
+        request: &[u8],
+        buffer: crate::native_compat::BufferMode,
+    ) -> anyhow::Result<Vec<u8>> {
+        self.calls.borrow_mut().push(buffer);
+        match buffer {
+            crate::native_compat::BufferMode::Raw => {
+                Err(DeviceRkpError::UnsupportedProtocol("raw command rejected".into()).into())
+            }
+            crate::native_compat::BufferMode::Shared => Exchange::csr(&self.valid, request),
+        }
+    }
+}
+
+#[tokio::test]
+async fn v2_can_fall_back_to_shared_buffers_and_still_requires_signature_verification() {
+    let (_dir, ctx) = working_dir("rkp-v2-shared");
+    let server = seeded_server();
+    let ta = V2SharedTa {
+        calls: RefCell::new(vec![]),
+        valid: FakeTa::new(),
+    };
+    let data = provision(
+        &ctx,
+        true,
+        Options {
+            protocol: Protocol::V2,
+            ..Options::default()
+        },
+        &FixedKeys,
+        &ta,
+        &server,
+        &FakeEnvironment,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        *ta.calls.borrow(),
+        [
+            crate::native_compat::BufferMode::Raw,
+            crate::native_compat::BufferMode::Shared
+        ]
+    );
+    assert_eq!(data.csr_protocol, Protocol::V2);
+    assert!(data.local_verify.unwrap().signature_valid);
+    assert_eq!(server.submitted.lock().unwrap().len(), 1);
 }

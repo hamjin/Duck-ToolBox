@@ -3,7 +3,7 @@ use crate::v1::{
     assemble,
     tests::{public_key, response as evidence},
 };
-use duck_rkp::cbor::{bytes, decode};
+use duck_rkp::cbor::{bytes, decode, encode};
 
 fn eek() -> Vec<u8> {
     // One COSE_Sign1 certificate; signature/root acceptance belongs to the device.
@@ -23,6 +23,15 @@ fn native_request_binds_the_public_key_and_exact_production_fields() {
     let value = decode(payload).unwrap();
     let fields = as_map(&value, "request").unwrap();
     assert_eq!(fields.len(), 5);
+    assert_eq!(&payload[..4], &[0xa5, 0x18, 0x37, 0x00]);
+    assert_eq!(
+        fields
+            .iter()
+            .map(|(key, _)| key.clone())
+            .collect::<Vec<_>>(),
+        [int(55), int(4), int(56), int(57), int(58)],
+        "the TA requires the vendor's field order, not canonical map sorting"
+    );
     assert_eq!(required(fields, 55).unwrap(), &int(0));
     assert_eq!(required(fields, 56).unwrap(), &bytes(vec![7; 32]));
     assert_eq!(
@@ -30,6 +39,12 @@ fn native_request_binds_the_public_key_and_exact_production_fields() {
         &bytes(request.mac_tag.to_vec())
     );
     assert_eq!(required(fields, 58).unwrap(), &bytes(eek()));
+    let canonical = decode(protocol::ta_payload(&request.canonical_bytes).unwrap()).unwrap();
+    assert_eq!(encode(&value).unwrap(), encode(&canonical).unwrap());
+    assert_eq!(
+        as_map(&canonical, "canonical request").unwrap()[0].0,
+        int(4)
+    );
     let other = build_request(&[3; 32], &public_key(), &eek(), &[8; 32]).unwrap();
     assert_ne!(request.mac_tag, other.mac_tag);
 }

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 
 type Messages = Record<string, unknown>
 
-const root = path.dirname(new URL(import.meta.url).pathname)
+const root = import.meta.dirname
 /** Translated in full. Tricky Addon's `ta` group follows upstream, so it is not counted. */
 const complete = [
   "zh-TW",

@@ -93,6 +93,7 @@
     "body": "この端末の KeyMint トラステッドアプリで RKP (V1 / V2) を実行し、結果を Google に送信します。対応デバイスは一部だけで、発行できるのは RKP 証明書のみです。エクスポートしたファイルには秘密鍵が含まれるため、厳重に管理してください。続行しますか？"
   },
   "errors": {
+    "unsupported_protocol": "ファームウェアがこの RKP プロトコルまたはネイティブインターフェースを拒否しました。未実装の可能性があります。別のプロトコルを試してください。",
     "certificate_manufacturer_mismatch": "証明書の manufacturer が要求値と一致しません。keybox は出力されませんでした。",
     "invalid_provisioning_info": "証明書の RKP provisioning 情報の形式が不正です。keybox は出力されませんでした。",
     "acknowledgement_required": "制限事項が確認されていません。",

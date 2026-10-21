@@ -93,7 +93,14 @@ pub(crate) struct Device<'a> {
 
 impl Exchange for Device<'_> {
     fn csr(&self, request: &[u8]) -> Result<Vec<u8>> {
-        worker::sign(self.paths, request)
+        worker::sign(self.paths, request, crate::native_compat::BufferMode::Raw)
+    }
+    fn csr_with_buffer(
+        &self,
+        request: &[u8],
+        buffer: crate::native_compat::BufferMode,
+    ) -> Result<Vec<u8>> {
+        worker::sign(self.paths, request, buffer)
     }
     fn csr_v1(&self, request: &v1::Request) -> Result<v1::Response> {
         let apk = v1::find_aidl_apk(self.sysroot).ok_or_else(|| {

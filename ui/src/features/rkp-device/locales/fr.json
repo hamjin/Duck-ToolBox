@@ -93,6 +93,7 @@
     "body": "Cela exécute RKP (V1 / V2) sur l'application de confiance KeyMint de l'appareil et envoie le résultat à Google. Cela ne fonctionne que sur certains appareils et n'émet que des certificats RKP. Les fichiers exportés contiennent une clé privée ; conservez-les en lieu sûr. Continuer ?"
   },
   "errors": {
+    "unsupported_protocol": "Le micrologiciel a refusé ce protocole RKP ou cette interface native, qui peut ne pas être implémentée. Essayez un autre protocole.",
     "certificate_manufacturer_mismatch": "Le manufacturer du certificat ne correspond pas à la demande ; aucune keybox n’a été exportée.",
     "invalid_provisioning_info": "Les informations de provisionnement RKP du certificat sont malformées ; aucune keybox n’a été exportée.",
     "acknowledgement_required": "Les limitations n'ont pas été acceptées.",
