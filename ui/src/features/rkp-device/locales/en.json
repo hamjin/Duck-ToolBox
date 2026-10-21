@@ -93,6 +93,7 @@
     "body": "This runs RKP (V1 / V2) on the device's KeyMint trusted app and submits the result to Google. It only works on some devices and only RKP certificates can be issued. The exported files contain a private key; keep them private. Continue?"
   },
   "errors": {
+    "unsupported_protocol": "The firmware rejected this RKP protocol or native interface; it may not be implemented. Try another protocol.",
     "certificate_manufacturer_mismatch": "The issued certificate manufacturer does not match the request; no keybox was exported.",
     "invalid_provisioning_info": "The issued certificate has malformed RKP provisioning information; no keybox was exported.",
     "acknowledgement_required": "The limitations were not acknowledged.",

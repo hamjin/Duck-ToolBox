@@ -93,6 +93,7 @@
     "body": "Ini menjalankan RKP (V1 / V2) pada aplikasi tepercaya KeyMint di perangkat lalu mengirim hasilnya ke Google. Hanya berfungsi di sebagian perangkat dan hanya menerbitkan sertifikat RKP. Berkas yang diekspor berisi kunci privat; simpan dengan aman. Lanjutkan?"
   },
   "errors": {
+    "unsupported_protocol": "Firmware menolak protokol RKP atau antarmuka native ini; mungkin belum diimplementasikan. Coba protokol lain.",
     "certificate_manufacturer_mismatch": "manufacturer pada sertifikat tidak sesuai dengan permintaan; keybox tidak diekspor.",
     "invalid_provisioning_info": "Informasi provisioning RKP pada sertifikat tidak valid; keybox tidak diekspor.",
     "acknowledgement_required": "Batasan belum disetujui.",

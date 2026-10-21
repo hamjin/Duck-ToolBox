@@ -136,7 +136,12 @@ for (const variant of [
     await expect(dialog.locator("pre")).toBeInViewport()
     await expect(footer).toBeInViewport()
     await footer.getByRole("button").first().click()
-    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(report)
+    // Windows clipboard text uses CRLF line endings.
+    await expect
+      .poll(async () =>
+        (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, "\n"),
+      )
+      .toBe(report)
     await footer.getByRole("button").last().click()
     await expect(dialog).toBeHidden()
   })

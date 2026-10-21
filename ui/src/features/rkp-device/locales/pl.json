@@ -93,6 +93,7 @@
     "body": "Ta operacja uruchamia mechanizm RKP (V1 / V2) w zaufanej aplikacji KeyMint urządzenia i przesyła wynik do Google. Działa to tylko na niektórych urządzeniach i wydaje wyłącznie certyfikaty RKP. Wyeksportowane pliki zawierają klucz prywatny; chroń je. Kontynuować?"
   },
   "errors": {
+    "unsupported_protocol": "Firmware odrzucił ten protokół RKP lub interfejs natywny; może nie być zaimplementowany. Wypróbuj inny protokół.",
     "certificate_manufacturer_mismatch": "Producent w wydanym certyfikacie nie odpowiada żądaniu; nie wyeksportowano keybox.",
     "invalid_provisioning_info": "Wydany certyfikat zawiera nieprawidłowe informacje RKP provisioning; nie wyeksportowano keybox.",
     "acknowledgement_required": "Ograniczenia nie zostały zaakceptowane.",

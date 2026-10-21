@@ -261,6 +261,12 @@ Unknown or conflicting information blocks issuance rather than guessing. These l
 checks do not establish firmware ABI compatibility or server acceptance. Device RKP Issuer
 uses feature contract 7; update the backend and WebUI together.
 
+Native issuance automatically tries ordinary and vendor-shared buffers. Native V1
+also retains both vendor field order and canonical field order, stopping at the first
+locally valid CSR before contacting the certificate endpoint. See the
+[SM8550 protocol diagnosis](docs/rkp-protocols-socrates.md) for the fallback sequence
+and device-tested compatibility limits.
+
 Device RKP Issuer accepts an optional `manufacturer` in the WebUI or through
 `rkp-device provision --manufacturer <value> --acknowledge-limitations`.
 The WebUI offers **Do not send**, the detected manufacturer (for example,

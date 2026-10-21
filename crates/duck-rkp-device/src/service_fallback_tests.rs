@@ -287,7 +287,7 @@ async fn all_method_failures_keep_their_names_codes_and_leave_no_artifacts() {
     ] {
         assert!(error.to_string().contains(expected));
     }
-    assert_eq!(methods.calls.borrow().len(), 3);
+    assert_eq!(methods.calls.borrow().len(), 4);
     assert_eq!(fs::read_dir(&ctx.paths.outputs_dir).unwrap().count(), 0);
 }
 

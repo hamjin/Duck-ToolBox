@@ -9,6 +9,7 @@ mod issuance;
 #[cfg(all(target_os = "android", target_arch = "aarch64"))]
 #[allow(unsafe_code)]
 mod keymint;
+mod native_compat;
 mod process;
 mod protocol;
 mod provisioning_info;

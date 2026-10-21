@@ -1,4 +1,5 @@
 //! Selects one device protocol while preserving each protocol's validation semantics.
+use crate::native_compat::{BufferMode, try_variants};
 use crate::{error::DeviceRkpError, protocol, status::DeviceStatus, v1};
 use anyhow::Result;
 use clap::ValueEnum;
@@ -26,6 +27,14 @@ pub(crate) enum Backend {
 /// Device adapters preserve each protocol's distinct request and response contract.
 pub(crate) trait Exchange {
     fn csr(&self, request: &[u8]) -> Result<Vec<u8>>;
+    fn csr_with_buffer(&self, request: &[u8], buffer: BufferMode) -> Result<Vec<u8>> {
+        match buffer {
+            BufferMode::Raw => self.csr(request),
+            BufferMode::Shared => {
+                Err(DeviceRkpError::Transport("shared-buffer adapter is unavailable".into()).into())
+            }
+        }
+    }
     fn csr_v1(&self, _request: &v1::Request) -> Result<v1::Response> {
         Err(DeviceRkpError::UnsupportedDevice("V1 adapter is unavailable".into()).into())
     }
@@ -139,9 +148,18 @@ pub(crate) fn issue(
         Method::V2 => {}
     }
     let request = protocol::build_request(&eek.challenge, &key.cose_public)?;
-    let signed = exchange.csr(&request)?;
-    let bytes = protocol::unwrap_csr(&signed)?;
-    let report = protocol::validate_csr(&bytes, &eek.challenge, &key.cose_public)?;
+    let (bytes, report) = try_variants(
+        &[
+            (BufferMode::Raw, "send_cmd"),
+            (BufferMode::Shared, "init/sendCmd"),
+        ],
+        |buffer| {
+            let signed = exchange.csr_with_buffer(&request, buffer)?;
+            let bytes = protocol::unwrap_csr(&signed)?;
+            let report = protocol::validate_csr(&bytes, &eek.challenge, &key.cose_public)?;
+            Ok((bytes, report))
+        },
+    )?;
     let bytes = match metadata {
         Some(metadata) => crate::csr_metadata::append_v2(&bytes, metadata)
             .map_err(|error| DeviceRkpError::InvalidCsr(format!("{error:#}")))?,
@@ -181,10 +199,33 @@ fn issue_native_v1(
         })?;
     let request = v1::native::request(&eek.challenge, &key.cose_public, &chain.encoded)
         .map_err(|error| DeviceRkpError::InvalidCsr(format!("native V1 request: {error:#}")))?;
-    let payload = exchange.csr(&request.bytes)?;
-    let response = v1::native::response(&payload, &request.mac_tag)
-        .map_err(|error| DeviceRkpError::InvalidResponse(format!("native V1: {error:#}")))?;
-    finish_v1(response, Backend::Native, key, eek, metadata)
+    try_variants(
+        &[
+            (
+                (request.bytes.as_slice(), BufferMode::Raw),
+                "vendor-order/send_cmd",
+            ),
+            (
+                (request.bytes.as_slice(), BufferMode::Shared),
+                "vendor-order/init/sendCmd",
+            ),
+            (
+                (request.canonical_bytes.as_slice(), BufferMode::Raw),
+                "canonical-order/send_cmd",
+            ),
+            (
+                (request.canonical_bytes.as_slice(), BufferMode::Shared),
+                "canonical-order/init/sendCmd",
+            ),
+        ],
+        |(bytes, buffer)| {
+            let payload = exchange.csr_with_buffer(bytes, buffer)?;
+            let response = v1::native::response(&payload, &request.mac_tag).map_err(|error| {
+                DeviceRkpError::InvalidResponse(format!("native V1: {error:#}"))
+            })?;
+            finish_v1(response, Backend::Native, key, eek, metadata)
+        },
+    )
 }
 
 fn finish_v1(
