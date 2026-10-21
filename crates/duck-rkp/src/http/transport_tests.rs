@@ -11,12 +11,20 @@ use std::{
 
 use ciborium::value::Value;
 
-use super::{fetch_challenge, fetch_eek, rkp_client, submit_csr, validate_endpoint};
-use crate::cbor::{bytes, encode, int};
+use super::{
+    fetch_challenge, fetch_eek, fetch_eek_with_manufacturer, rkp_client, submit_csr,
+    submit_csr_with_manufacturer, validate_endpoint,
+};
+use crate::cbor::{bytes, decode, encode, int, text};
+
+struct Request {
+    line: String,
+    body: Vec<u8>,
+}
 
 struct Server {
     origin: String,
-    requests: Arc<Mutex<Vec<String>>>,
+    requests: Arc<Mutex<Vec<Request>>>,
     stop: Arc<AtomicBool>,
     worker: Option<JoinHandle<()>>,
 }
@@ -67,7 +75,21 @@ impl Server {
     }
 
     fn requests(&self) -> Vec<String> {
-        self.requests.lock().unwrap().clone()
+        self.requests
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|request| request.line.clone())
+            .collect()
+    }
+
+    fn bodies(&self) -> Vec<Vec<u8>> {
+        self.requests
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|request| request.body.clone())
+            .collect()
     }
 }
 
@@ -81,7 +103,7 @@ impl Drop for Server {
     }
 }
 
-fn read_request(socket: &mut TcpStream) -> String {
+fn read_request(socket: &mut TcpStream) -> Request {
     socket
         .set_read_timeout(Some(Duration::from_secs(3)))
         .unwrap();
@@ -109,7 +131,10 @@ fn read_request(socket: &mut TcpStream) -> String {
         assert!(size > 0);
         data.extend_from_slice(&buffer[..size]);
     }
-    header.lines().next().unwrap().to_string()
+    Request {
+        line: header.lines().next().unwrap().to_string(),
+        body: data[end..end + length].to_vec(),
+    }
 }
 
 fn eek_response() -> Vec<u8> {
@@ -141,6 +166,72 @@ const ENDPOINT_PATHS: [(&str, &str); 5] = [
     ("/v1", "/v1"),
     ("/custom/version/", "/custom/version"),
 ];
+
+#[tokio::test]
+async fn optional_manufacturer_is_encoded_in_both_requests_without_changing_payloads() {
+    for (manufacturer, query) in [
+        (None, ""),
+        (Some(""), ""),
+        (Some(" \t\n"), ""),
+        (Some(" Google "), "manufacturer=Google"),
+        (
+            Some("A&B /+=?#厂商"),
+            "manufacturer=A%26B+%2F%2B%3D%3F%23%E5%8E%82%E5%95%86",
+        ),
+    ] {
+        let client = rkp_client().unwrap();
+        let server = Server::start(200, eek_response());
+        let eek = fetch_eek_with_manufacturer(&client, "synthetic", &server.origin, manufacturer)
+            .await
+            .unwrap();
+        assert_eq!(eek.challenge, [7; 32]);
+        let suffix = if query.is_empty() {
+            String::new()
+        } else {
+            format!("?{query}")
+        };
+        assert_eq!(
+            server.requests(),
+            [format!("POST /v1:fetchEekChain{suffix} HTTP/1.1")]
+        );
+        assert_eq!(
+            decode(&server.bodies()[0]).unwrap(),
+            Value::Map(vec![
+                (text("id"), int(42)),
+                (text("fingerprint"), text("synthetic")),
+            ])
+        );
+
+        let body = encode(&Value::Array(vec![
+            bytes(vec![1]),
+            Value::Array(vec![bytes(vec![2])]),
+        ]))
+        .unwrap();
+        let server = Server::start(200, body);
+        let chains = submit_csr_with_manufacturer(
+            &client,
+            b"synthetic CSR",
+            &[1, 2, 3],
+            &server.origin,
+            manufacturer,
+        )
+        .await
+        .unwrap();
+        assert_eq!(chains, [vec![1, 2]]);
+        let prefix = if query.is_empty() {
+            String::new()
+        } else {
+            format!("{query}&")
+        };
+        assert_eq!(
+            server.requests(),
+            [format!(
+                "POST /v1:signCertificates?{prefix}challenge=AQID HTTP/1.1"
+            )]
+        );
+        assert_eq!(server.bodies(), [b"synthetic CSR".to_vec()]);
+    }
+}
 
 #[tokio::test]
 async fn challenge_requests_normalize_endpoint_paths() {

@@ -50,6 +50,16 @@
     "v1_native_unavailable": "V1 Native memerlukan /dev/smcinvoke dan libkeymasterdeviceutils.so."
   },
   "run": {
+    "requestedManufacturer": "manufacturer yang diminta",
+    "certificateManufacturer": "manufacturer pada sertifikat",
+    "manufacturerNotReturned": "Server tidak mengembalikan manufacturer",
+    "manufacturerNotReturnedHint": "manufacturer dikirim dalam permintaan, tetapi tidak ada dalam sertifikat yang diterbitkan. Sertifikat asli yang ditandatangani server telah diekspor.",
+    "manufacturerNone": "Jangan kirim",
+    "manufacturerDevice": "{manufacturer} (perangkat saat ini)",
+    "manufacturerCustom": "Kustom",
+    "manufacturer": "RKP Provisioning manufacturer (opsional)",
+    "manufacturerPlaceholder": "Kosongkan untuk melewati",
+    "manufacturerHint": "Mengirim manufacturer dalam permintaan provisioning RKP. Kosongkan untuk menggunakan permintaan bawaan.",
     "provision": "Terbitkan keybox RKP",
     "done": "Keybox RKP diterbitkan",
     "blocked": "Selesaikan dulu prasyarat yang kurang di atas.",
@@ -83,6 +93,8 @@
     "body": "Ini menjalankan RKP (V1 / V2) pada aplikasi tepercaya Qualcomm KeyMint di perangkat lalu mengirim hasilnya ke Google. Hanya berfungsi di sebagian perangkat dan hanya menerbitkan sertifikat RKP. Berkas yang diekspor berisi kunci privat; simpan dengan aman. Lanjutkan?"
   },
   "errors": {
+    "certificate_manufacturer_mismatch": "manufacturer pada sertifikat tidak sesuai dengan permintaan; keybox tidak diekspor.",
+    "invalid_provisioning_info": "Informasi provisioning RKP pada sertifikat tidak valid; keybox tidak diekspor.",
     "acknowledgement_required": "Batasan belum disetujui.",
     "unsupported_device": "Perangkat ini tidak memenuhi prasyarat.",
     "ta_timeout": "Aplikasi tepercaya KeyMint tidak menjawab tepat waktu.",

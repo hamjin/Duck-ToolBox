@@ -245,7 +245,7 @@ fn features_manifest_lists_every_registered_tool() {
         .iter()
         .find(|feature| feature["id"] == "rkp-device")
         .unwrap();
-    assert_eq!(device["contract"], 5);
+    assert_eq!(device["contract"], 7);
 }
 
 #[test]
@@ -272,6 +272,8 @@ fn explicit_device_rkp_protocol_reports_only_its_own_resource_requirements() {
                 "--acknowledge-limitations",
                 "--protocol",
                 protocol,
+                "--manufacturer",
+                "Google",
             ])
             .output()
             .unwrap();

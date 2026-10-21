@@ -5,13 +5,52 @@ import mock from "./mock"
 const originalUrl = location.href
 afterEach(() => history.replaceState(null, "", originalUrl))
 
-function provision(protocol?: string) {
+function provision(protocol?: string, manufacturer?: string) {
   const flags: Record<string, string | true> = { "acknowledge-limitations": true }
   if (protocol !== undefined) flags.protocol = protocol
+  if (manufacturer !== undefined) flags.manufacturer = manufacturer
   return mock.handlers["rkp-device.provision"]!([], flags, undefined)
 }
 
 describe("device RKP mock protocol contract", () => {
+  it("exports when the server omits manufacturer and distinguishes it from a match", () => {
+    history.replaceState(null, "", "/?rkp_manufacturer=missing")
+    expect(provision("auto", "Xiaomi")).toMatchObject({
+      manufacturer: {
+        status: "not_returned",
+        requested: "Xiaomi",
+        certificate: null,
+      },
+      attempts: [{ method: "v2", error: null }],
+    })
+    expect(provision("v1", "  ")).toMatchObject({
+      manufacturer: {
+        status: "not_requested",
+        requested: null,
+        certificate: null,
+      },
+    })
+    history.replaceState(null, "", "/")
+    expect(provision("v1", "Xiaomi")).toMatchObject({
+      manufacturer: {
+        status: "matched",
+        requested: "Xiaomi",
+        certificate: "Xiaomi",
+      },
+    })
+  })
+  it.each([
+    ["mismatch", "certificate_manufacturer_mismatch"],
+    ["malformed", "invalid_provisioning_info"],
+  ])("rejects %s certificate metadata only when manufacturer is requested", (failure, code) => {
+    history.replaceState(null, "", `/?rkp_manufacturer=${failure}`)
+    expect(() => provision("v2", "Google")).toThrowError(expect.objectContaining({ code }))
+    expect(() => provision("auto", "Google")).toThrowError(
+      expect.objectContaining({ code: "all_methods_failed" }),
+    )
+    expect(provision("v2", "  ")).toMatchObject({ csr_protocol: "v2" })
+  })
+
   it.each([
     ["v1-only", "v2"],
     ["v1-only", "v1-native"],
